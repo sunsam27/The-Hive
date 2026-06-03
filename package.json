@@ -2,10 +2,14 @@
   "name": "the-hive",
   "private": true,
   "scripts": {
-    "dev": "npm --prefix client run dev",
+    "dev": "concurrently -n client,server -c cyan,yellow \"npm --prefix client run dev\" \"npm --prefix server run dev\"",
+    "dev:client": "npm --prefix client run dev",
     "dev:server": "npm --prefix server run dev",
     "build": "npm --prefix client run build",
     "lint": "npm --prefix client run lint",
     "test": "npm --prefix client run test"
+  },
+  "devDependencies": {
+    "concurrently": "^10.0.3"
   }
 }
