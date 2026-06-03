@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { Users, Receipt, BarChart3, UserPlus, MoreVertical, Plus, ArrowLeft, X, Mail, Eye, Clock, Settings, Trash2, Shield, Pencil } from 'lucide-react';
+import { Users, Receipt, BarChart3, UserPlus, MoreVertical, Plus, ArrowLeft, X, Eye, Settings, Trash2, Shield } from 'lucide-react';
 import AppShell from '../components/layout/AppShell';
 import Button from '../components/ui/Button';
 import NewExpenseModal from '../components/upload/NewExpenseModal';
@@ -31,12 +31,13 @@ export default function WorkspaceView() {
   const [settingsDesc, setSettingsDesc] = useState('');
   const [savingSettings, setSavingSettings] = useState(false);
   const [menuMember, setMenuMember] = useState(null);
+  const [removeConfirm, setRemoveConfirm] = useState(null);
   const { showToast } = useToast();
 
   function fetchExpenses() {
     setExpensesLoading(true);
     expenseService.list({ workspaceId: id })
-      .then((res) => setExpenses(res.data.data || res.data))
+      .then((res) => setExpenses(res.data.data))
       .catch((err) => { showToast(err?.response?.data?.error || 'Failed to load'); })
       .finally(() => setExpensesLoading(false));
   }
@@ -46,7 +47,7 @@ export default function WorkspaceView() {
     fetchExpenses();
   }, [id]);
   const [inviteEmail, setInviteEmail] = useState('');
-  const [inviteRole, setInviteRole] = useState('client');
+  const [inviteRole, setInviteRole] = useState('member');
   const [inviting, setInviting] = useState(false);
   const [inviteError, setInviteError] = useState('');
 
@@ -223,17 +224,7 @@ export default function WorkspaceView() {
                                 <Shield size={14} />
                                 {m.role === 'admin' ? 'Demote to Member' : 'Promote to Admin'}
                               </button>
-                              <button className="wv-menu-item wv-menu-item-danger" onClick={async () => {
-                                if (!window.confirm(`Remove ${m.name} from this workspace?`)) return;
-                                try {
-                                  await workspaceService.removeMember(id, m.id);
-                                  showToast('Member removed', 'success');
-                                  setMenuMember(null);
-                                  loadWorkspace();
-                                } catch (err) {
-                                  showToast(err?.response?.data?.error || 'Failed to remove member', 'error');
-                                }
-                              }}>
+                              <button className="wv-menu-item wv-menu-item-danger" onClick={() => { setRemoveConfirm(m); setMenuMember(null); }}>
                                 <Trash2 size={14} />
                                 Remove
                               </button>
@@ -284,8 +275,8 @@ export default function WorkspaceView() {
                 <div className="wv-invite-field">
                   <label>Role</label>
                   <select className="wv-select" value={inviteRole} onChange={(e) => setInviteRole(e.target.value)}>
+                    <option value="member">Member</option>
                     <option value="client">Client</option>
-                    <option value="freelancer">Freelancer</option>
                   </select>
                 </div>
               </div>
@@ -338,6 +329,30 @@ export default function WorkspaceView() {
       )}
 
       <NewExpenseModal isOpen={isModalOpen} onClose={() => { setIsModalOpen(false); fetchExpenses(); }} workspaceId={id} />
+
+      {removeConfirm && (
+        <Modal isOpen={true} onClose={() => setRemoveConfirm(null)} title="Remove Member">
+          <p style={{ marginBottom: 20, color: 'var(--color-on-surface-variant)', fontSize: 14, lineHeight: 1.6 }}>
+            Are you sure you want to remove <strong>{removeConfirm.name}</strong> from this workspace?
+          </p>
+          <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8 }}>
+            <Button variant="ghost" onClick={() => setRemoveConfirm(null)}>Cancel</Button>
+            <Button variant="danger" onClick={async () => {
+              try {
+                await workspaceService.removeMember(id, removeConfirm.id);
+                showToast('Member removed', 'success');
+                setRemoveConfirm(null);
+                loadWorkspace();
+              } catch (err) {
+                showToast(err?.response?.data?.error || 'Failed to remove member', 'error');
+                setRemoveConfirm(null);
+              }
+            }}>
+              Remove
+            </Button>
+          </div>
+        </Modal>
+      )}
 
       <style>{`
         .wv-page { padding: 4px 0; }

@@ -25,14 +25,56 @@ export default function SummaryView() {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const { showToast } = useToast();
+  const [showRange, setShowRange] = useState(false);
+  const [dateFrom, setDateFrom] = useState('');
+  const [dateTo, setDateTo] = useState('');
 
-  useEffect(() => {
+  function fetchSummary(from, to) {
     if (!id) return;
-    api.get(`/summaries/${id}`)
+    setLoading(true);
+    const params = {};
+    if (from) params.dateFrom = from;
+    if (to) params.dateTo = to;
+    api.get(`/summaries/${id}`, { params })
       .then((res) => setData(res.data))
       .catch((err) => { showToast(err?.response?.data?.error || 'Failed to load'); })
       .finally(() => setLoading(false));
+  }
+
+  useEffect(() => {
+    fetchSummary();
   }, [id]);
+
+  function handleShare() {
+    navigator.clipboard.writeText(window.location.href);
+    showToast('Link copied to clipboard', 'success');
+  }
+
+  function handleDownload() {
+    if (!data?.expenses?.length) {
+      showToast('No data to export', 'error');
+      return;
+    }
+    const headers = 'Date,Merchant,Amount,Status,Category,Description\n';
+    const rows = data.expenses.map((e) =>
+      `"${e.expense_date || ''}","${(e.merchant || '').replace(/"/g, '""')}","${parseFloat(e.amount) || 0}","${e.status || ''}","${(e.category || '').replace(/"/g, '""')}","${(e.description || '').replace(/"/g, '""')}"`
+    ).join('\n');
+    const csv = headers + rows;
+    const blob = new Blob([csv], { type: 'text/csv' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `summary-${id}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+    showToast('CSV downloaded', 'success');
+  }
+
+  function handleRangeChange(e) {
+    e.preventDefault();
+    fetchSummary(dateFrom, dateTo);
+    setShowRange(false);
+  }
 
   if (loading) return <AppShell><div className="sv-loading">Loading...</div></AppShell>;
 
@@ -51,17 +93,27 @@ export default function SummaryView() {
             <p className="sv-sub">Overview of all expenses in this workspace.</p>
           </div>
           <div className="sv-actions">
-            <Button variant="ghost"><Share2 size={18} /> Share</Button>
-            <Button variant="primary"><Download size={18} /> Download PDF</Button>
+            <Button variant="ghost" onClick={handleShare}><Share2 size={18} /> Share</Button>
+            <Button variant="primary" onClick={handleDownload}><Download size={18} /> Download CSV</Button>
           </div>
         </div>
 
         <div className="sv-range">
           <div className="sv-range-info">
             <Calendar size={18} />
-            <span>All time</span>
+            <span>{dateFrom || dateTo ? `${dateFrom || '...'} to ${dateTo || '...'}` : 'All time'}</span>
           </div>
-          <Button variant="ghost" size="sm">Change Range</Button>
+          {showRange ? (
+            <form onSubmit={handleRangeChange} className="sv-range-form">
+              <input type="date" className="sv-date-input" value={dateFrom} onChange={(e) => setDateFrom(e.target.value)} />
+              <span style={{ color: 'var(--color-on-surface-variant)', fontSize: 13 }}>to</span>
+              <input type="date" className="sv-date-input" value={dateTo} onChange={(e) => setDateTo(e.target.value)} />
+              <Button variant="primary" size="sm" type="submit">Apply</Button>
+              <Button variant="ghost" size="sm" type="button" onClick={() => { setShowRange(false); setDateFrom(''); setDateTo(''); fetchSummary(); }}>Reset</Button>
+            </form>
+          ) : (
+            <Button variant="ghost" size="sm" onClick={() => setShowRange(true)}>Change Range</Button>
+          )}
         </div>
 
         <div className="sv-stats">
@@ -323,6 +375,24 @@ export default function SummaryView() {
           text-align: center;
           color: var(--color-on-surface-variant);
           font-size: 15px;
+        }
+        .sv-range-form {
+          display: flex;
+          align-items: center;
+          gap: 8px;
+        }
+        .sv-date-input {
+          padding: 6px 10px;
+          border-radius: 8px;
+          border: 1.5px solid var(--color-outline-variant);
+          background: var(--color-surface);
+          color: var(--color-on-surface);
+          font-family: 'Space Grotesk', sans-serif;
+          font-size: 13px;
+        }
+        .sv-date-input:focus {
+          outline: none;
+          border-color: var(--color-primary);
         }
       `}</style>
     </AppShell>

@@ -42,7 +42,7 @@ export default function ExpenseList() {
 
   useEffect(() => {
     expenseService.list(buildParams())
-      .then((res) => setExpenses(res.data.data || res.data))
+      .then((res) => setExpenses(res.data.data))
       .catch(() => showToast('Failed to load expenses', 'error'))
       .finally(() => setLoading(false));
     // eslint-disable-next-line react-hooks/exhaustive-deps

@@ -1,7 +1,8 @@
 import fs from 'fs';
 import path from 'path';
 import db from '../db/index.js';
-import { checkExpenseAccess, checkWorkspaceAccess } from '../utils/accessControl.js';
+import { checkExpenseAccess, checkWorkspaceAccess, checkReviewerRole } from '../utils/accessControl.js';
+import { logAudit } from '../utils/auditLog.js';
 
 const VALID_TRANSITIONS = {
   draft: ['submitted'],
@@ -113,6 +114,9 @@ export async function create(req, res, next) {
         status: 'draft',
       })
       .returning('*');
+
+    await logAudit(db, req.user.id, 'expense.created', 'expense', expense.id, { workspaceId, amount, merchant });
+
     res.status(201).json(expense);
   } catch (err) {
     next(err);
@@ -163,6 +167,8 @@ export async function submit(req, res, next) {
       .update({ status: 'submitted', submitted_at: new Date() })
       .returning('*');
 
+    await logAudit(db, req.user.id, 'expense.submitted', 'expense', req.params.id, null);
+
     res.json(updated);
   } catch (err) {
     next(err);
@@ -185,7 +191,12 @@ export async function getById(req, res, next) {
     const receipts = await db('receipts').where({ expense_id: req.params.id });
     const tags = await db('expense_tags').where({ expense_id: req.params.id }).select('name');
 
-    res.json({ ...expense, receipts, tags: tags.map((t) => t.name) });
+    const member = await db('workspace_members')
+      .where({ workspace_id: expense.workspace_id, user_id: req.user.id })
+      .first();
+    const canReview = member && ['admin', 'client'].includes(member.role);
+
+    res.json({ ...expense, receipts, tags: tags.map((t) => t.name), canReview });
   } catch (err) {
     next(err);
   }
@@ -204,17 +215,20 @@ export async function remove(req, res, next) {
       return res.status(403).json({ error: 'Only the creator can delete this expense' });
     }
 
-    const receipts = await db('receipts').where({ expense_id: req.params.id });
-    await db('expense_tags').where({ expense_id: req.params.id }).del();
-    await db('receipts').where({ expense_id: req.params.id }).del();
-    await db('expenses').where({ id: req.params.id }).del();
+    await db.transaction(async (trx) => {
+      const receipts = await trx('receipts').where({ expense_id: req.params.id });
+      await trx('expense_tags').where({ expense_id: req.params.id }).del();
+      await trx('receipts').where({ expense_id: req.params.id }).del();
+      await trx('expenses').where({ id: req.params.id }).del();
 
-    for (const r of receipts) {
-      const filename = r.file_url.replace('/uploads/receipts/', '');
-      const filePath = path.resolve('uploads/receipts', filename);
-      try { fs.unlinkSync(filePath); } catch { }
-    }
+      await logAudit(trx, req.user.id, 'expense.deleted', 'expense', req.params.id, { title: expense.merchant });
 
+      for (const r of receipts) {
+        const filename = r.file_url.replace('/uploads/receipts/', '');
+        const filePath = path.resolve('uploads/receipts', filename);
+        try { fs.unlinkSync(filePath); } catch { }
+      }
+    });
 
     res.json({ message: 'Expense deleted' });
   } catch (err) {
@@ -224,17 +238,27 @@ export async function remove(req, res, next) {
 
 export async function pay(req, res, next) {
   try {
-    const expense = await checkExpenseAccess(req.params.id, req.user.id);
+    const expense = await checkReviewerRole(req.params.id, req.user.id);
     if (!expense) return res.status(404).json({ error: 'Expense not found' });
 
     if (expense.status !== 'approved') {
       return res.status(400).json({ error: 'Only approved expenses can be marked as paid' });
     }
 
+    const updates = { status: 'paid' };
+    if (req.file) {
+      updates.paid_proof_url = `/uploads/proofs/${req.file.filename}`;
+    }
+    if (req.body.note) {
+      updates.paid_note = req.body.note;
+    }
+
     const [updated] = await db('expenses')
       .where({ id: req.params.id })
-      .update({ status: 'paid' })
+      .update(updates)
       .returning('*');
+
+    await logAudit(db, req.user.id, 'expense.paid', 'expense', req.params.id, { hasProof: !!req.file, hasNote: !!req.body.note });
 
     res.json(updated);
   } catch (err) {
@@ -256,9 +280,15 @@ export async function submitAllDrafts(req, res, next) {
 
     const ids = drafts.map((d) => d.id);
 
-    await db('expenses')
-      .whereIn('id', ids)
-      .update({ status: 'submitted', submitted_at: new Date() });
+    await db.transaction(async (trx) => {
+      await trx('expenses')
+        .whereIn('id', ids)
+        .update({ status: 'submitted', submitted_at: new Date() });
+
+      for (const id of ids) {
+        await logAudit(trx, req.user.id, 'expense.submitted', 'expense', id, null);
+      }
+    });
 
     res.json({ submitted: ids.length });
   } catch (err) {
@@ -269,7 +299,7 @@ export async function submitAllDrafts(req, res, next) {
 export async function review(req, res, next) {
   try {
     const { status, notes } = req.validated;
-    const expense = await checkExpenseAccess(req.params.id, req.user.id);
+    const expense = await checkReviewerRole(req.params.id, req.user.id);
     if (!expense) return res.status(404).json({ error: 'Expense not found' });
 
     if (!VALID_TRANSITIONS[expense.status]?.includes(status)) {
@@ -294,6 +324,8 @@ export async function review(req, res, next) {
     }
 
     const [updated] = await db('expenses').where({ id: req.params.id }).update(updates).returning('*');
+
+    await logAudit(db, req.user.id, `expense.${status}`, 'expense', req.params.id, status === 'rejected' ? { rejectionNote: notes } : null);
 
     res.json(updated);
   } catch (err) {

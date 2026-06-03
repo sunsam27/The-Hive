@@ -28,4 +28,10 @@ export const authService = {
   changePassword(currentPassword, newPassword) {
     return api.put('/auth/change-password', { currentPassword, newPassword });
   },
+
+  updateProfile(data) {
+    return api.patch('/auth/profile', data, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    });
+  },
 };

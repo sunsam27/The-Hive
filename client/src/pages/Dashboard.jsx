@@ -50,7 +50,7 @@ const Dashboard = () => {
 
   useEffect(() => {
     expenseService.list()
-      .then((res) => setExpenses(res.data.data || res.data))
+      .then((res) => setExpenses(res.data.data))
       .catch((err) => { showToast(err?.response?.data?.error || 'Failed to load'); })
       .finally(() => setLoading(false));
   }, [location.pathname]);

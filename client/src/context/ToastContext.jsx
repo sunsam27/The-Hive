@@ -45,8 +45,8 @@ export function ToastProvider({ children }) {
           font-weight: var(--font-label-label-1-font-weight);
           font-size: var(--font-label-label-1-font-size);
         }
-        .toast-success { color: #10b981; }
-        .toast-error { color: #ef4444; }
+        .toast-success { background: #059669; color: #fff; }
+        .toast-error { background: #dc2626; color: #fff; }
         @keyframes slideIn {
           from { transform: translateX(100%); opacity: 0; }
           to { transform: translateX(0); opacity: 1; }

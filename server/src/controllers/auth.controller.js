@@ -77,14 +77,7 @@ export async function login(req, res, next) {
 
 export async function getMe(req, res, next) {
   try {
-    const authHeader = req.headers.authorization;
-    if (!authHeader?.startsWith('Bearer ')) {
-      return res.status(401).json({ error: 'No token provided' });
-    }
-
-    const token = authHeader.split(' ')[1];
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
-    const user = await db('users').where({ id: decoded.userId }).first();
+    const user = await db('users').where({ id: req.user.id }).first();
     if (!user) return res.status(404).json({ error: 'User not found' });
 
     const { password_hash, verification_token, reset_token, reset_token_expires, ...safeUser } = user;
@@ -96,8 +89,7 @@ export async function getMe(req, res, next) {
 
 export async function forgotPassword(req, res, next) {
   try {
-    const { email } = req.body;
-    if (!email) return res.status(400).json({ error: 'Email is required' });
+    const { email } = req.validated;
 
     const user = await db('users').where({ email }).first();
     if (!user) return res.json({ message: 'If the email exists, a reset link has been sent.' });
@@ -137,11 +129,7 @@ export async function changePassword(req, res, next) {
 export async function resetPassword(req, res, next) {
   try {
     const { token } = req.params;
-    const { password } = req.body;
-
-    if (!password || password.length < 6) {
-      return res.status(400).json({ error: 'Password must be at least 6 characters' });
-    }
+    const { password } = req.validated;
 
     const user = await db('users')
       .where({ reset_token: token })
@@ -157,6 +145,24 @@ export async function resetPassword(req, res, next) {
       .update({ password_hash: passwordHash, reset_token: null, reset_token_expires: null });
 
     res.json({ message: 'Password reset successfully. You can now sign in.' });
+  } catch (err) {
+    next(err);
+  }
+}
+
+export async function updateProfile(req, res, next) {
+  try {
+    const updates = {};
+    if (req.validated?.name) updates.name = req.validated.name;
+    if (req.file) updates.avatar_url = `/uploads/avatars/${req.file.filename}`;
+
+    if (Object.keys(updates).length === 0) {
+      return res.status(400).json({ error: 'Nothing to update' });
+    }
+
+    const [user] = await db('users').where({ id: req.user.id }).update(updates).returning('*');
+    const { password_hash, verification_token, reset_token, reset_token_expires, ...safeUser } = user;
+    res.json({ user: safeUser });
   } catch (err) {
     next(err);
   }

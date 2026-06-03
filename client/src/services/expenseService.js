@@ -46,8 +46,13 @@ export const expenseService = {
     return api.delete(`/expenses/${id}`);
   },
 
-  pay(id) {
-    return api.post(`/expenses/${id}/pay`);
+  pay(id, file, note) {
+    const formData = new FormData();
+    if (file) formData.append('proof', file);
+    if (note) formData.append('note', note);
+    return api.post(`/expenses/${id}/pay`, formData, {
+      headers: file ? { 'Content-Type': 'multipart/form-data' } : {},
+    });
   },
 
   submitAllDrafts() {

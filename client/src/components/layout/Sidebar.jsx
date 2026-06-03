@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { NavLink } from 'react-router-dom';
 import { 
   LayoutDashboard, 
@@ -10,9 +10,37 @@ import {
   KeyRound
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
+import ProfileModal from './ProfileModal';
 
 const Sidebar = () => {
   const { user, logout } = useAuth();
+  const [profileModalOpen, setProfileModalOpen] = useState(false);
+  const [avatarBlob, setAvatarBlob] = useState(null);
+  const avatarBlobRef = useRef(null);
+
+  useEffect(() => {
+    if (!user?.avatar_url) { setAvatarBlob(null); return; }
+    const token = localStorage.getItem('token');
+    if (!token) return;
+    const API_BASE = import.meta.env.VITE_API_URL?.replace('/api', '') || 'http://localhost:3001';
+    fetch(`${API_BASE}${user.avatar_url}`, {
+      headers: { Authorization: `Bearer ${token}` },
+    })
+      .then((res) => { if (!res.ok) throw new Error(); return res.blob(); })
+      .then((blob) => {
+        const url = URL.createObjectURL(blob);
+        if (avatarBlobRef.current) URL.revokeObjectURL(avatarBlobRef.current);
+        avatarBlobRef.current = url;
+        setAvatarBlob(url);
+      })
+      .catch(() => setAvatarBlob(null));
+    return () => {
+      if (avatarBlobRef.current) {
+        URL.revokeObjectURL(avatarBlobRef.current);
+        avatarBlobRef.current = null;
+      }
+    };
+  }, [user?.avatar_url]);
 
   const navItems = [
     { name: 'Dashboard', icon: <LayoutDashboard size={20} />, path: '/dashboard' },
@@ -41,9 +69,13 @@ const Sidebar = () => {
       </nav>
 
       <div className="sidebar-footer">
-        <div className="user-profile">
+        <div className="user-profile" onClick={() => setProfileModalOpen(true)} style={{ cursor: 'pointer' }}>
           <div className="user-avatar">
-            <UserIcon size={16} />
+            {user?.avatar_url && avatarBlob ? (
+              <img src={avatarBlob} alt="" className="sidebar-avatar-img" />
+            ) : (
+              <UserIcon size={16} />
+            )}
           </div>
           <div className="user-info">
             <p className="user-name">{user?.name || 'User'}</p>
@@ -146,6 +178,7 @@ const Sidebar = () => {
           align-items: center;
           justify-content: center;
           flex-shrink: 0;
+          overflow: hidden;
         }
         .user-info {
           flex: 1;
@@ -186,7 +219,13 @@ const Sidebar = () => {
           background: var(--color-error-container);
           color: var(--color-on-error-container);
         }
-      `}</style>
+        .sidebar-avatar-img {
+          width: 100%;
+          height: 100%;
+          object-fit: cover;
+        }
+      `}      </style>
+      <ProfileModal isOpen={profileModalOpen} onClose={() => setProfileModalOpen(false)} />
     </aside>
   );
 };

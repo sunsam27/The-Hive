@@ -1,5 +1,6 @@
 import db from '../db/index.js';
 import { checkWorkspaceAccess } from '../utils/accessControl.js';
+import { logAudit } from '../utils/auditLog.js';
 
 export async function list(req, res, next) {
   try {
@@ -16,14 +17,20 @@ export async function list(req, res, next) {
 export async function create(req, res, next) {
   try {
     const { name, description } = req.validated;
-    const [workspace] = await db('workspaces')
-      .insert({ name, description, owner_id: req.user.id })
-      .returning('*');
 
-    await db('workspace_members').insert({
-      workspace_id: workspace.id,
-      user_id: req.user.id,
-      role: 'admin',
+    let workspace;
+    await db.transaction(async (trx) => {
+      [workspace] = await trx('workspaces')
+        .insert({ name, description, owner_id: req.user.id })
+        .returning('*');
+
+      await trx('workspace_members').insert({
+        workspace_id: workspace.id,
+        user_id: req.user.id,
+        role: 'admin',
+      });
+
+      await logAudit(trx, req.user.id, 'workspace.created', 'workspace', workspace.id, { name });
     });
 
     res.status(201).json(workspace);
@@ -60,12 +67,15 @@ export async function updateWorkspace(req, res, next) {
       return res.status(403).json({ error: 'Only the owner can edit workspace settings' });
     }
 
-    const { name, description } = req.body;
+    const { name, description } = req.validated;
     const updates = {};
     if (name !== undefined) updates.name = name;
     if (description !== undefined) updates.description = description;
 
     const [updated] = await db('workspaces').where({ id: req.params.id }).update(updates).returning('*');
+
+    await logAudit(db, req.user.id, 'workspace.updated', 'workspace', req.params.id, { changes: Object.keys(updates) });
+
     res.json(updated);
   } catch (err) {
     next(err);
@@ -96,6 +106,9 @@ export async function removeMember(req, res, next) {
     }
 
     await db('workspace_members').where({ workspace_id: req.params.id, user_id: req.params.userId }).del();
+
+    await logAudit(db, req.user.id, 'member.removed', 'workspace', req.params.id, { removedUserId: req.params.userId });
+
     res.json({ message: 'Member removed' });
   } catch (err) {
     next(err);
@@ -125,14 +138,13 @@ export async function updateMemberRole(req, res, next) {
       return res.status(400).json({ error: 'Cannot change the workspace owner role' });
     }
 
-    const { role } = req.body;
-    if (!role || !['admin', 'member', 'client'].includes(role)) {
-      return res.status(400).json({ error: 'Invalid role. Must be admin, member, or client' });
-    }
+    const { role } = req.validated;
 
     await db('workspace_members')
       .where({ workspace_id: req.params.id, user_id: req.params.userId })
       .update({ role });
+
+    await logAudit(db, req.user.id, 'member.role_updated', 'workspace', req.params.id, { targetUserId: req.params.userId, newRole: role });
 
     res.json({ message: 'Role updated' });
   } catch (err) {
@@ -156,7 +168,7 @@ export async function addMember(req, res, next) {
       return res.status(403).json({ error: 'Only workspace owners and admins can add members' });
     }
 
-    const { email, role } = req.body;
+    const { email, role } = req.validated;
     const user = await db('users').where({ email }).first();
     if (!user) return res.status(404).json({ error: 'User not found' });
 
@@ -168,6 +180,8 @@ export async function addMember(req, res, next) {
     const [member] = await db('workspace_members')
       .insert({ workspace_id: req.params.id, user_id: user.id, role: role || 'member' })
       .returning('*');
+
+    await logAudit(db, req.user.id, 'member.added', 'workspace', req.params.id, { addedUserId: user.id, role: role || 'member' });
 
     res.status(201).json(member);
   } catch (err) {

@@ -1,11 +1,12 @@
 import { useState, useEffect } from 'react';
 import AppShell from '../components/layout/AppShell';
-import { ArrowLeft, Check, X, Tag as TagIcon, Calendar, Building2, Upload, FileText, Send, Edit3, Pencil } from 'lucide-react';
+import { ArrowLeft, Check, X, Tag as TagIcon, Calendar, Building2, FileText, Send, Pencil } from 'lucide-react';
 import { useNavigate, useParams } from 'react-router-dom';
 import Button from '../components/ui/Button';
 import { expenseService } from '../services/expenseService';
 import { useToast } from '../hooks/useToast';
 import EditExpenseModal from '../components/upload/EditExpenseModal';
+import PayModal from '../components/upload/PayModal';
 import Modal from '../components/ui/Modal';
 
 const ExpenseDetail = () => {
@@ -21,6 +22,8 @@ const ExpenseDetail = () => {
   const [receiptImages, setReceiptImages] = useState({});
   const [expandedImg, setExpandedImg] = useState(null);
   const [confirmDelete, setConfirmDelete] = useState(false);
+  const [payModalOpen, setPayModalOpen] = useState(false);
+  const [proofBlob, setProofBlob] = useState(null);
   const { showToast } = useToast();
 
   useEffect(() => {
@@ -52,11 +55,27 @@ const ExpenseDetail = () => {
       if (res.data?.receipts) {
         res.data.receipts.forEach(loadReceiptImage);
       }
+      if (res.data?.paid_proof_url) {
+        loadProofImage(res.data.paid_proof_url);
+      }
     } catch {
       setExpense(null);
     } finally {
       setLoading(false);
     }
+  }
+
+  async function loadProofImage(url) {
+    const token = localStorage.getItem('token');
+    if (!token) return;
+    try {
+      const res = await fetch(`${API_BASE}${url}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (!res.ok) return;
+      const blob = await res.blob();
+      setProofBlob(URL.createObjectURL(blob));
+    } catch {}
   }
 
   async function handleReview(status) {
@@ -165,26 +184,23 @@ const ExpenseDetail = () => {
                 <h4>Receipts</h4>
                 {expense.receipts.map((r) => {
                   const isImage = /\.(jpg|jpeg|png|webp)$/i.test(r.file_url);
-                  const imgUrl = receiptImages[r.id];
+                  const blobUrl = receiptImages[r.id];
+                  const fileName = r.file_url.split('/').pop();
 
-                  if (isImage && imgUrl) {
+                  if (!blobUrl) {
+                    return (
+                      <button key={r.id} className="ed-receipt-file" onClick={() => loadReceiptImage(r)}>
+                        <FileText size={16} />
+                        {fileName}
+                      </button>
+                    );
+                  }
+
+                  if (isImage) {
                     return (
                       <div key={r.id} className="ed-receipt-img-wrap">
-                        <img
-                          src={imgUrl}
-                          alt="Receipt"
-                          className="ed-receipt-img"
-                          onClick={() => setExpandedImg(imgUrl)}
-                        />
-                        <button
-                          className="ed-receipt-dl"
-                          onClick={() => {
-                            const a = document.createElement('a');
-                            a.href = imgUrl;
-                            a.download = r.file_url.split('/').pop();
-                            a.click();
-                          }}
-                        >
+                        <img src={blobUrl} alt="Receipt" className="ed-receipt-img" onClick={() => setExpandedImg(blobUrl)} />
+                        <button className="ed-receipt-dl" onClick={() => { const a = document.createElement('a'); a.href = blobUrl; a.download = fileName; a.click(); }}>
                           <FileText size={14} />
                           Download
                         </button>
@@ -193,10 +209,10 @@ const ExpenseDetail = () => {
                   }
 
                   return (
-                    <a key={r.id} href={`${API_BASE}${r.file_url}?token=${localStorage.getItem('token')}`} target="_blank" className="ed-receipt-file" rel="noreferrer">
+                    <button key={r.id} className="ed-receipt-file" onClick={() => { const a = document.createElement('a'); a.href = blobUrl; a.download = fileName; a.click(); }}>
                       <FileText size={16} />
-                      {r.file_url.split('/').pop()}
-                    </a>
+                      Download {fileName}
+                    </button>
                   );
                 })}
               </div>
@@ -277,24 +293,44 @@ const ExpenseDetail = () => {
               </div>
             )}
 
-            {expense.status === 'approved' && (
+            {expense.status === 'approved' && expense.canReview && (
               <div className="ed-actions">
-                <Button variant="primary" style={{ flex: 1 }} onClick={async () => {
-                  try {
-                    await expenseService.pay(expenseId);
-                    showToast('Marked as paid', 'success');
-                    loadExpense();
-                  } catch (err) {
-                    showToast(err?.response?.data?.error || 'Failed to mark as paid', 'error');
-                  }
-                }}>
+                <Button variant="primary" style={{ flex: 1 }} onClick={() => setPayModalOpen(true)}>
                   <Check size={18} />
                   Mark as Paid
                 </Button>
               </div>
             )}
 
-            {expense.status === 'submitted' && (
+            {expense.status === 'paid' && expense.paid_proof_url && (
+              <div className="ed-paid-proof">
+                <h4>Proof of Payment</h4>
+                {expense.paid_note && <p className="ed-paid-note">{expense.paid_note}</p>}
+                {/\.(jpg|jpeg|png|webp)$/i.test(expense.paid_proof_url) ? (
+                  proofBlob ? (
+                    <img
+                      src={proofBlob}
+                      alt="Payment proof"
+                      className="ed-proof-img"
+                      onClick={() => setExpandedImg(proofBlob)}
+                    />
+                  ) : (
+                    <p className="ed-paid-loading">Loading proof...</p>
+                  )
+                ) : (
+                  proofBlob ? (
+                    <button className="ed-receipt-file" onClick={() => { const a = document.createElement('a'); a.href = proofBlob; a.download = expense.paid_proof_url.split('/').pop(); a.click(); }}>
+                      <FileText size={16} />
+                      Download proof
+                    </button>
+                  ) : (
+                    <p className="ed-paid-loading">Loading proof...</p>
+                  )
+                )}
+              </div>
+            )}
+
+            {expense.status === 'submitted' && expense.canReview && (
               <>
                 <div className="ed-actions">
                   <Button variant="danger" style={{ flex: 1 }} onClick={() => handleReview('rejected')} disabled={actionLoading}>
@@ -354,6 +390,13 @@ const ExpenseDetail = () => {
         onClose={() => setEditModalOpen(false)}
         expense={expense}
         onSaved={loadExpense}
+      />
+
+      <PayModal
+        isOpen={payModalOpen}
+        onClose={() => setPayModalOpen(false)}
+        expenseId={expenseId}
+        onPaid={loadExpense}
       />
 
       <style>{`
@@ -418,6 +461,13 @@ const ExpenseDetail = () => {
         .ed-receipt-dl:hover { background: var(--color-primary-container); }
         .ed-img-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.85); z-index: 3000; display: flex; align-items: center; justify-content: center; cursor: pointer; padding: 40px; }
         .ed-img-full { max-width: 100%; max-height: 100%; object-fit: contain; border-radius: 8px; }
+
+        .ed-paid-proof { background: var(--color-surface); padding: 20px; border-radius: 14px; border: 1px solid var(--color-outline-variant); margin-bottom: 24px; }
+        .ed-paid-proof h4 { font-size: 14px; font-weight: 700; color: var(--color-on-surface); margin-bottom: 8px; }
+        .ed-paid-note { font-size: 13px; color: var(--color-on-surface-variant); margin-bottom: 12px; font-style: italic; }
+        .ed-paid-loading { font-size: 13px; color: var(--color-on-surface-variant); }
+        .ed-proof-img { width: 100%; border-radius: 8px; cursor: pointer; border: 1px solid var(--color-outline-variant); transition: opacity 0.15s ease; }
+        .ed-proof-img:hover { opacity: 0.85; }
       `}</style>
     </AppShell>
   );

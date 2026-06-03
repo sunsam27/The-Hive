@@ -16,9 +16,21 @@ const createSchema = z.object({
 router.get('/', workspaceController.list);
 router.post('/', validate(createSchema), workspaceController.create);
 router.get('/:id', workspaceController.getById);
-router.patch('/:id', workspaceController.updateWorkspace);
-router.post('/:id/members', workspaceController.addMember);
+const updateWorkspaceSchema = z.object({
+  name: z.string().min(1).optional(),
+  description: z.string().optional(),
+});
+const addMemberSchema = z.object({
+  email: z.string().email(),
+  role: z.enum(['admin', 'member', 'client']).optional(),
+});
+const updateMemberRoleSchema = z.object({
+  role: z.enum(['admin', 'member', 'client']),
+});
+
+router.patch('/:id', validate(updateWorkspaceSchema), workspaceController.updateWorkspace);
+router.post('/:id/members', validate(addMemberSchema), workspaceController.addMember);
 router.delete('/:id/members/:userId', workspaceController.removeMember);
-router.patch('/:id/members/:userId', workspaceController.updateMemberRole);
+router.patch('/:id/members/:userId', validate(updateMemberRoleSchema), workspaceController.updateMemberRole);
 
 export default router;
