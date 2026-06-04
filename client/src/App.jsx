@@ -17,26 +17,29 @@ import ChangePassword from './pages/auth/ChangePassword';
 
 function App() {
   return (
-    <ErrorBoundary><Router>
-      <Routes>
-        <Route path="/" element={<Landing />} />
-        <Route path="/login" element={<Login />} />
-        <Route path="/signup" element={<Signup />} />
-        <Route path="/forgot-password" element={<ForgotPassword />} />
-        <Route path="/verify-email" element={<VerifyEmail />} />
-        <Route path="/reset-password" element={<ResetPassword />} />
+    <ErrorBoundary>
+      <Router>
+        <a href="#main-content" className="skip-link">Skip to content</a>
+        <Routes>
+          <Route path="/" element={<Landing />} />
+          <Route path="/login" element={<Login />} />
+          <Route path="/signup" element={<Signup />} />
+          <Route path="/forgot-password" element={<ForgotPassword />} />
+          <Route path="/verify-email" element={<VerifyEmail />} />
+          <Route path="/reset-password" element={<ResetPassword />} />
 
-        <Route path="/dashboard" element={<AuthGuard><Dashboard /></AuthGuard>} />
-        <Route path="/workspaces" element={<AuthGuard><WorkspaceList /></AuthGuard>} />
-        <Route path="/workspaces/:id" element={<AuthGuard><WorkspaceView /></AuthGuard>} />
-        <Route path="/workspaces/:id/summary" element={<AuthGuard><SummaryView /></AuthGuard>} />
-        <Route path="/expenses" element={<AuthGuard><ExpenseList /></AuthGuard>} />
-        <Route path="/change-password" element={<AuthGuard><ChangePassword /></AuthGuard>} />
-        <Route path="/expenses/:expenseId" element={<AuthGuard><ExpenseDetail /></AuthGuard>} />
+          <Route path="/dashboard" element={<AuthGuard><Dashboard /></AuthGuard>} />
+          <Route path="/workspaces" element={<AuthGuard><WorkspaceList /></AuthGuard>} />
+          <Route path="/workspaces/:id" element={<AuthGuard><WorkspaceView /></AuthGuard>} />
+          <Route path="/workspaces/:id/summary" element={<AuthGuard><SummaryView /></AuthGuard>} />
+          <Route path="/expenses" element={<AuthGuard><ExpenseList /></AuthGuard>} />
+          <Route path="/change-password" element={<AuthGuard><ChangePassword /></AuthGuard>} />
+          <Route path="/expenses/:expenseId" element={<AuthGuard><ExpenseDetail /></AuthGuard>} />
 
-        <Route path="*" element={<div>404 Not Found</div>} />
-      </Routes>
-    </Router></ErrorBoundary>
+          <Route path="*" element={<div className="page page-enter" style={{ padding: 60, textAlign: 'center' }}>404 Not Found</div>} />
+        </Routes>
+      </Router>
+    </ErrorBoundary>
   );
 }
 

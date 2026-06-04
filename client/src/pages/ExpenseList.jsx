@@ -1,8 +1,9 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { Plus, Receipt, ArrowUpRight, Filter, Send, Download } from 'lucide-react';
+import { Plus, Receipt, ArrowUpRight, Send, Download } from 'lucide-react';
 import AppShell from '../components/layout/AppShell';
 import Button from '../components/ui/Button';
+import Skeleton from '../components/ui/Skeleton';
 import NewExpenseModal from '../components/upload/NewExpenseModal';
 import { useToast } from '../hooks/useToast';
 import { expenseService } from '../services/expenseService';
@@ -71,49 +72,65 @@ export default function ExpenseList() {
       a.download = 'expenses.csv';
       a.click();
       URL.revokeObjectURL(url);
-    } catch (err) {
+    } catch {
       showToast('Failed to export', 'error');
     }
   }
 
-  if (loading) return <AppShell><div className="el-loading">Loading...</div></AppShell>;
+  if (loading) return <AppShell>
+    <div className="page page-enter">
+      <div className="page-top">
+        <div>
+          <h1 className="page-title">All Expenses</h1>
+          <p className="page-sub">Manage and review all your submitted expenses.</p>
+        </div>
+      </div>
+      <div className="card">
+        <div style={{ padding: 20 }}>
+          {Array.from({ length: 6 }).map((_, i) => (
+            <Skeleton key={i} variant="row" />
+          ))}
+        </div>
+      </div>
+    </div>
+  </AppShell>;
 
   return (
     <AppShell>
-      <div className="el-page">
-        <div className="el-top">
+      <div className="page page-enter">
+        <div className="page-top">
           <div>
-            <h1 className="el-title">All Expenses</h1>
-            <p className="el-sub">Manage and review all your submitted expenses.</p>
+            <h1 className="page-title">All Expenses</h1>
+            <p className="page-sub">Manage and review all your submitted expenses.</p>
           </div>
           <Button variant="primary" onClick={() => setModalOpen(true)}>
-            <Plus size={20} />
+            <Plus size={20} aria-hidden="true" />
             New Expense
           </Button>
         </div>
 
-        <div className="el-card">
-          <div className="el-card-header">
-            <div className="el-card-header-left">
-              <span className="el-count">{expenses.length} expense{expenses.length !== 1 ? 's' : ''}</span>
+        <div className="card">
+          <div className="card-header">
+            <div className="card-header-left">
+              <span className="card-count">{expenses.length} expense{expenses.length !== 1 ? 's' : ''}</span>
             </div>
-            <div className="el-card-header-right">
+            <div className="card-header-right">
               {draftCount > 0 && (
                 <Button variant="primary" size="sm" onClick={handleSubmitAllDrafts} disabled={submittingDrafts}>
-                  <Send size={14} />
+                  <Send size={14} aria-hidden="true" />
                   {submittingDrafts ? 'Submitting...' : `Submit ${draftCount} Draft${draftCount > 1 ? 's' : ''}`}
                 </Button>
               )}
-              <Button variant="ghost" size="sm" onClick={handleExport} title="Export CSV">
+              <Button variant="ghost" size="sm" onClick={handleExport} title="Export CSV" aria-label="Export CSV">
                 <Download size={14} />
               </Button>
             </div>
           </div>
 
-          <div className="el-filters">
-            <div className="el-filter-group">
-              <label className="el-filter-label">Status</label>
-              <select className="el-filter-select" value={filter} onChange={(e) => setFilter(e.target.value)}>
+          <div className="filter-bar">
+            <div className="filter-group">
+              <label className="filter-label" htmlFor="el-status">Status</label>
+              <select id="el-status" className="filter-select" value={filter} onChange={(e) => setFilter(e.target.value)}>
                 <option value="all">All</option>
                 <option value="draft">Draft</option>
                 <option value="submitted">Submitted</option>
@@ -121,21 +138,21 @@ export default function ExpenseList() {
                 <option value="rejected">Rejected</option>
               </select>
             </div>
-            <div className="el-filter-group">
-              <label className="el-filter-label">Category</label>
-              <input className="el-filter-input" type="text" placeholder="Any category" value={categoryFilter} onChange={(e) => setCategoryFilter(e.target.value)} />
+            <div className="filter-group">
+              <label className="filter-label" htmlFor="el-category">Category</label>
+              <input id="el-category" className="filter-input" type="text" placeholder="Any category" value={categoryFilter} onChange={(e) => setCategoryFilter(e.target.value)} />
             </div>
-            <div className="el-filter-group">
-              <label className="el-filter-label">From</label>
-              <input className="el-filter-input" type="date" value={dateFrom} onChange={(e) => setDateFrom(e.target.value)} />
+            <div className="filter-group">
+              <label className="filter-label" htmlFor="el-from">From</label>
+              <input id="el-from" className="filter-input" type="date" value={dateFrom} onChange={(e) => setDateFrom(e.target.value)} />
             </div>
-            <div className="el-filter-group">
-              <label className="el-filter-label">To</label>
-              <input className="el-filter-input" type="date" value={dateTo} onChange={(e) => setDateTo(e.target.value)} />
+            <div className="filter-group">
+              <label className="filter-label" htmlFor="el-to">To</label>
+              <input id="el-to" className="filter-input" type="date" value={dateTo} onChange={(e) => setDateTo(e.target.value)} />
             </div>
-            <div className="el-filter-group">
-              <label className="el-filter-label">Sort by</label>
-              <select className="el-filter-select" value={`${sortBy}:${sortOrder}`} onChange={(e) => { const [s, o] = e.target.value.split(':'); setSortBy(s); setSortOrder(o); }}>
+            <div className="filter-group">
+              <label className="filter-label" htmlFor="el-sort">Sort by</label>
+              <select id="el-sort" className="filter-select" value={`${sortBy}:${sortOrder}`} onChange={(e) => { const [s, o] = e.target.value.split(':'); setSortBy(s); setSortOrder(o); }}>
                 <option value="created_at:desc">Newest first</option>
                 <option value="created_at:asc">Oldest first</option>
                 <option value="amount:desc">Highest amount</option>
@@ -148,7 +165,7 @@ export default function ExpenseList() {
           </div>
 
           {expenses.length > 0 ? (
-            <table className="el-table">
+            <table className="data-table">
               <thead>
                 <tr>
                   <th>Date</th>
@@ -164,18 +181,18 @@ export default function ExpenseList() {
                   const sc = statusColors[e.status] || statusColors.submitted;
                   return (
                     <tr key={e.id}>
-                      <td className="el-cell-date">{e.expense_date ? new Date(e.expense_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : '—'}</td>
-                      <td className="el-cell-merchant">{e.merchant || '—'}</td>
-                      <td className="el-cell-amount">${(parseFloat(e.amount) || 0).toFixed(2)}</td>
+                      <td className="cell-date">{e.expense_date ? new Date(e.expense_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : '—'}</td>
+                      <td className="cell-merchant">{e.merchant || '—'}</td>
+                      <td className="cell-amount">${(parseFloat(e.amount) || 0).toFixed(2)}</td>
                       <td>{e.category || '—'}</td>
                       <td>
-                        <span className="el-badge" style={{ background: sc.bg, color: sc.fg }}>
+                        <span className="badge" style={{ background: sc.bg, color: sc.fg }}>
                           {e.status}
                         </span>
                       </td>
-                      <td className="el-cell-action">
-                        <Link to={`/expenses/${e.id}`} className="el-view-link">
-                          View <ArrowUpRight size={14} />
+                      <td className="cell-action">
+                        <Link to={`/expenses/${e.id}`} className="section-more" aria-label={`View ${e.merchant || 'expense'} details`}>
+                          View <ArrowUpRight size={14} aria-hidden="true" />
                         </Link>
                       </td>
                     </tr>
@@ -184,12 +201,12 @@ export default function ExpenseList() {
               </tbody>
             </table>
           ) : (
-            <div className="el-empty">
-              <div className="el-empty-icon"><Receipt size={32} /></div>
+            <div className="empty-state" style={{ border: 'none' }}>
+              <div className="empty-state-icon"><Receipt size={32} /></div>
               <h3>No expenses found</h3>
               <p>Get started by adding your first expense.</p>
               <Button variant="primary" onClick={() => setModalOpen(true)}>
-                <Plus size={18} />
+                <Plus size={18} aria-hidden="true" />
                 New Expense
               </Button>
             </div>
@@ -198,162 +215,6 @@ export default function ExpenseList() {
       </div>
 
       <NewExpenseModal isOpen={modalOpen} onClose={() => setModalOpen(false)} />
-
-      <style>{`
-        .el-page { padding: 4px 0; }
-        .el-top {
-          display: flex;
-          justify-content: space-between;
-          align-items: flex-end;
-          margin-bottom: 28px;
-        }
-        .el-title {
-          font-size: 26px;
-          font-weight: 700;
-          color: var(--color-on-surface);
-          letter-spacing: -0.5px;
-          margin-bottom: 6px;
-        }
-        .el-sub {
-          font-size: 15px;
-          color: var(--color-on-surface-variant);
-        }
-        .el-card {
-          background: var(--color-surface);
-          border-radius: 16px;
-          border: 1px solid var(--color-outline-variant);
-          overflow: hidden;
-        }
-        .el-card-header {
-          display: flex;
-          justify-content: space-between;
-          align-items: center;
-          padding: 16px 20px;
-          border-bottom: 1px solid var(--color-outline-variant);
-        }
-        .el-card-header-left { display: flex; align-items: center; gap: 12px; }
-        .el-card-header-right {
-          display: flex;
-          align-items: center;
-          gap: 12px;
-        }
-        .el-count {
-          font-size: 13px;
-          color: var(--color-on-surface-variant);
-          font-weight: 500;
-        }
-        .el-filters {
-          display: flex;
-          gap: 16px;
-          padding: 14px 20px;
-          border-bottom: 1px solid var(--color-outline-variant);
-          background: var(--color-surface-container-low);
-          flex-wrap: wrap;
-        }
-        .el-filter-group {
-          display: flex;
-          flex-direction: column;
-          gap: 4px;
-        }
-        .el-filter-label {
-          font-size: 11px;
-          font-weight: 600;
-          color: var(--color-on-surface-variant);
-          text-transform: uppercase;
-          letter-spacing: 0.3px;
-        }
-        .el-filter-select, .el-filter-input {
-          border: 1.5px solid var(--color-outline-variant);
-          background: var(--color-surface);
-          color: var(--color-on-surface);
-          font-family: 'Space Grotesk', sans-serif;
-          font-size: 13px;
-          padding: 7px 10px;
-          border-radius: 8px;
-          transition: border-color 0.15s ease;
-          min-width: 130px;
-        }
-        .el-filter-select { cursor: pointer; }
-        .el-filter-select:focus, .el-filter-input:focus { outline: none; border-color: var(--color-primary); }
-        .el-table {
-          width: 100%;
-          border-collapse: collapse;
-        }
-        .el-table th {
-          text-align: left;
-          padding: 12px 20px;
-          font-size: 12px;
-          font-weight: 600;
-          color: var(--color-on-surface-variant);
-          text-transform: uppercase;
-          letter-spacing: 0.5px;
-          background: var(--color-surface-container-low);
-          border-bottom: 1px solid var(--color-outline-variant);
-        }
-        .el-table td {
-          padding: 14px 20px;
-          font-size: 14px;
-          color: var(--color-on-surface);
-          border-bottom: 1px solid var(--color-outline-variant);
-        }
-        .el-table tbody tr:last-child td { border-bottom: none; }
-        .el-table tbody tr:hover { background: var(--color-surface-container-low); }
-        .el-cell-date { white-space: nowrap; color: var(--color-on-surface-variant); width: 130px; }
-        .el-cell-merchant { font-weight: 600; }
-        .el-cell-amount { font-weight: 700; white-space: nowrap; }
-        .el-badge {
-          display: inline-block;
-          padding: 4px 12px;
-          border-radius: 20px;
-          font-size: 11px;
-          font-weight: 600;
-          text-transform: capitalize;
-        }
-        .el-cell-action { text-align: right; width: 80px; }
-        .el-view-link {
-          display: inline-flex;
-          align-items: center;
-          gap: 4px;
-          font-size: 13px;
-          font-weight: 600;
-          color: var(--color-primary);
-          text-decoration: none;
-          transition: opacity 0.15s ease;
-        }
-        .el-view-link:hover { opacity: 0.75; }
-        .el-empty {
-          text-align: center;
-          padding: 60px 20px;
-        }
-        .el-empty-icon {
-          width: 64px;
-          height: 64px;
-          margin: 0 auto 16px;
-          background: var(--color-primary-container);
-          color: var(--color-primary);
-          border-radius: 16px;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-        }
-        .el-empty h3 {
-          font-size: 18px;
-          font-weight: 700;
-          color: var(--color-on-surface);
-          margin-bottom: 8px;
-        }
-        .el-empty p {
-          font-size: 14px;
-          color: var(--color-on-surface-variant);
-          margin-bottom: 24px;
-        }
-        .el-loading {
-          padding: 60px;
-          text-align: center;
-          color: var(--color-on-surface-variant);
-          font-size: 15px;
-        }
-      `}</style>
     </AppShell>
   );
 }

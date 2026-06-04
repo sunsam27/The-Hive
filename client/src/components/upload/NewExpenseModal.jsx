@@ -1,6 +1,6 @@
-import { useState, useRef } from 'react';
+import { useState } from 'react';
 import { useForm } from 'react-hook-form';
-import { Upload, FileText, Check, AlertCircle, X, Plus } from 'lucide-react';
+import { Upload, FileText, AlertCircle, X, Plus } from 'lucide-react';
 import Modal from '../ui/Modal';
 import Input from '../ui/Input';
 import Button from '../ui/Button';
@@ -20,7 +20,6 @@ const NewExpenseModal = ({ isOpen, onClose, workspaceId }) => {
   const [tagInput, setTagInput] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const { showToast } = useToast();
-  const fileInputRef = useRef(null);
   const { register, handleSubmit, setValue, reset, formState: { errors } } = useForm();
 
   const handleFileChange = async (e) => {

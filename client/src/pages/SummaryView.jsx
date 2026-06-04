@@ -76,23 +76,23 @@ export default function SummaryView() {
     setShowRange(false);
   }
 
-  if (loading) return <AppShell><div className="sv-loading">Loading...</div></AppShell>;
+  if (loading) return <AppShell><div className="loading-state">Loading...</div></AppShell>;
 
   const { expenses = [], summary = { total: 0, pending: 0, approved: 0, rejected: 0 } } = data || {};
 
   return (
     <AppShell>
-      <div className="sv-page">
-        <div className="sv-top">
+      <div className="page">
+        <div className="page-top">
           <div>
-            <Link to={`/workspaces/${id}`} className="sv-back">
+            <Link to={`/workspaces/${id}`} className="back-link">
               <ArrowLeft size={18} />
               Back to Workspace
             </Link>
-            <h1 className="sv-title">Reimbursement Summary</h1>
-            <p className="sv-sub">Overview of all expenses in this workspace.</p>
+            <h1 className="page-title">Reimbursement Summary</h1>
+            <p className="page-sub">Overview of all expenses in this workspace.</p>
           </div>
-          <div className="sv-actions">
+          <div className="page-actions">
             <Button variant="ghost" onClick={handleShare}><Share2 size={18} /> Share</Button>
             <Button variant="primary" onClick={handleDownload}><Download size={18} /> Download CSV</Button>
           </div>
@@ -135,266 +135,40 @@ export default function SummaryView() {
           </div>
         </div>
 
-        <section className="sv-section">
-          <h2 className="sv-section-title">Itemized Expenses</h2>
+        <section>
+          <h2 className="section-ttl">Itemized Expenses</h2>
           {expenses.length > 0 ? (
-            <div className="sv-table">
-              <div className="sv-table-header">
+            <div className="data-row-list">
+              <div className="data-row-header">
                 <span>Date</span>
-                <span className="sv-col-merchant">Merchant</span>
+                <span className="data-row-col--wide">Merchant</span>
                 <span>Amount</span>
                 <span>Status</span>
               </div>
               {expenses.map((e) => {
                 const sc = statusColors[e.status] || statusColors.pending;
                 return (
-                  <div key={e.id} className="sv-table-row">
-                    <span className="sv-cell-date">{e.expense_date ? new Date(e.expense_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : '—'}</span>
-                    <span className="sv-col-merchant sv-cell-merchant">{e.merchant || '—'}</span>
-                    <span className="sv-cell-amount">{e.currency || 'USD'} ${(Number(e.amount) || 0).toFixed(2)}</span>
+                  <div key={e.id} className="data-row-item">
+                    <span className="data-row-col--date">{e.expense_date ? new Date(e.expense_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : '—'}</span>
+                    <span className="data-row-col--wide data-row-col--merchant">{e.merchant || '—'}</span>
+                    <span className="data-row-col--amount">{e.currency || 'USD'} ${(Number(e.amount) || 0).toFixed(2)}</span>
                     <span>
-                      <span className="sv-pill" style={{ background: sc.bg, color: sc.fg }}>{e.status}</span>
+                      <span className="badge" style={{ background: sc.bg, color: sc.fg }}>{e.status}</span>
                     </span>
                   </div>
                 );
               })}
             </div>
           ) : (
-            <div className="sv-empty">
-              <div className="sv-empty-icon"><Receipt size={32} /></div>
+            <div className="empty-state">
+              <div className="empty-state-icon"><Receipt size={24} /></div>
               <h3>No expenses yet</h3>
               <p>Add expenses to this workspace to see a summary.</p>
-              <Link to={`/workspaces/${id}`} className="sv-empty-btn">Go to Workspace</Link>
+              <Link to={`/workspaces/${id}`} className="section-more" style={{ display: 'inline-flex' }}>Go to Workspace</Link>
             </div>
           )}
         </section>
       </div>
-
-      <style>{`
-        .sv-page { padding: 4px 0; }
-        .sv-top {
-          display: flex;
-          justify-content: space-between;
-          align-items: flex-end;
-          margin-bottom: 24px;
-        }
-        .sv-back {
-          display: inline-flex;
-          align-items: center;
-          gap: 6px;
-          font-size: 13px;
-          font-weight: 600;
-          color: var(--color-on-surface-variant);
-          text-decoration: none;
-          margin-bottom: 12px;
-          transition: color 0.15s ease;
-        }
-        .sv-back:hover { color: var(--color-on-surface); }
-        .sv-title {
-          font-size: 26px;
-          font-weight: 700;
-          color: var(--color-on-surface);
-          letter-spacing: -0.5px;
-          margin-bottom: 6px;
-        }
-        .sv-sub { font-size: 15px; color: var(--color-on-surface-variant); }
-        .sv-actions { display: flex; gap: 12px; }
-
-        .sv-range {
-          background: var(--color-surface);
-          padding: 14px 20px;
-          border-radius: 12px;
-          display: flex;
-          justify-content: space-between;
-          align-items: center;
-          margin-bottom: 32px;
-          border: 1px solid var(--color-outline-variant);
-        }
-        .sv-range-info {
-          display: flex;
-          align-items: center;
-          gap: 10px;
-          color: var(--color-on-surface);
-          font-weight: 600;
-          font-size: 14px;
-        }
-
-        .sv-stats {
-          display: grid;
-          grid-template-columns: 1fr 1fr;
-          gap: 24px;
-          margin-bottom: 48px;
-        }
-        .sv-total-card {
-          background: linear-gradient(135deg, var(--color-primary), hsl(210, 100%, 40%));
-          color: var(--color-on-primary);
-          padding: 36px;
-          border-radius: 20px;
-          display: flex;
-          flex-direction: column;
-          justify-content: center;
-        }
-        .sv-total-label {
-          font-size: 14px;
-          opacity: 0.8;
-          margin-bottom: 4px;
-          font-weight: 500;
-        }
-        .sv-total-amount {
-          font-size: 42px;
-          font-weight: 700;
-          letter-spacing: -1px;
-          margin-bottom: 4px;
-        }
-        .sv-total-sub {
-          font-size: 13px;
-          opacity: 0.7;
-        }
-        .sv-breakdown {
-          background: var(--color-surface);
-          padding: 28px;
-          border-radius: 16px;
-          border: 1px solid var(--color-outline-variant);
-          display: flex;
-          flex-direction: column;
-          gap: 24px;
-          justify-content: center;
-        }
-        .sv-status-item {
-          display: flex;
-          align-items: center;
-          gap: 14px;
-        }
-        .sv-status-dot {
-          width: 10px;
-          height: 10px;
-          border-radius: 50%;
-          flex-shrink: 0;
-        }
-        .sv-status-info { flex: 1; }
-        .sv-status-label {
-          font-weight: 600;
-          color: var(--color-on-surface);
-          font-size: 15px;
-        }
-        .sv-status-count {
-          font-size: 12px;
-          color: var(--color-on-surface-variant);
-          margin-top: 2px;
-        }
-
-        .sv-section { }
-        .sv-section-title {
-          font-size: 18px;
-          font-weight: 700;
-          color: var(--color-on-surface);
-          letter-spacing: -0.3px;
-          margin-bottom: 16px;
-        }
-        .sv-table {
-          background: var(--color-surface);
-          border-radius: 16px;
-          border: 1px solid var(--color-outline-variant);
-          overflow: hidden;
-        }
-        .sv-table-header {
-          display: flex;
-          padding: 14px 20px;
-          background: var(--color-surface-container-low);
-          font-size: 12px;
-          font-weight: 600;
-          color: var(--color-on-surface-variant);
-          text-transform: uppercase;
-          letter-spacing: 0.5px;
-        }
-        .sv-table-row {
-          display: flex;
-          padding: 14px 20px;
-          border-bottom: 1px solid var(--color-outline-variant);
-          align-items: center;
-          font-size: 14px;
-          color: var(--color-on-surface);
-          transition: background 0.15s ease;
-        }
-        .sv-table-row:last-child { border-bottom: none; }
-        .sv-table-row:hover { background: var(--color-surface-container-low); }
-        .sv-table-header span, .sv-table-row span { flex: 1; }
-        .sv-col-merchant { flex: 2 !important; }
-        .sv-cell-date { color: var(--color-on-surface-variant); white-space: nowrap; }
-        .sv-cell-merchant { font-weight: 600; }
-        .sv-cell-amount { font-weight: 700; white-space: nowrap; }
-        .sv-pill {
-          display: inline-block;
-          padding: 4px 12px;
-          border-radius: 20px;
-          font-size: 11px;
-          font-weight: 600;
-          text-transform: capitalize;
-        }
-        .sv-empty {
-          text-align: center;
-          padding: 60px 20px;
-          background: var(--color-surface);
-          border-radius: 16px;
-          border: 1px solid var(--color-outline-variant);
-        }
-        .sv-empty-icon {
-          width: 64px;
-          height: 64px;
-          margin: 0 auto 16px;
-          background: var(--color-primary-container);
-          color: var(--color-primary);
-          border-radius: 16px;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-        }
-        .sv-empty h3 {
-          font-size: 18px;
-          font-weight: 700;
-          color: var(--color-on-surface);
-          margin-bottom: 8px;
-        }
-        .sv-empty p {
-          font-size: 14px;
-          color: var(--color-on-surface-variant);
-          margin-bottom: 24px;
-        }
-        .sv-empty-btn {
-          display: inline-block;
-          padding: 10px 24px;
-          background: var(--color-primary);
-          color: #fff;
-          text-decoration: none;
-          border-radius: 10px;
-          font-weight: 600;
-          font-size: 14px;
-        }
-        .sv-loading {
-          padding: 60px;
-          text-align: center;
-          color: var(--color-on-surface-variant);
-          font-size: 15px;
-        }
-        .sv-range-form {
-          display: flex;
-          align-items: center;
-          gap: 8px;
-        }
-        .sv-date-input {
-          padding: 6px 10px;
-          border-radius: 8px;
-          border: 1.5px solid var(--color-outline-variant);
-          background: var(--color-surface);
-          color: var(--color-on-surface);
-          font-family: 'Space Grotesk', sans-serif;
-          font-size: 13px;
-        }
-        .sv-date-input:focus {
-          outline: none;
-          border-color: var(--color-primary);
-        }
-      `}</style>
     </AppShell>
   );
 }

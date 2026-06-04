@@ -87,22 +87,22 @@ export default function WorkspaceView() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id]);
 
-  if (loading) return <AppShell><div className="wv-loading">Loading...</div></AppShell>;
-  if (!workspace) return <AppShell><div className="wv-loading">Workspace not found</div></AppShell>;
+  if (loading) return <AppShell><div className="loading-state">Loading...</div></AppShell>;
+  if (!workspace) return <AppShell><div className="loading-state">Workspace not found</div></AppShell>;
 
   return (
     <AppShell>
-      <div className="wv-page">
-        <div className="wv-header">
+        <div className="page">
+        <div className="page-top page-top--start">
           <div>
-            <Link to="/workspaces" className="wv-back">
+            <Link to="/workspaces" className="back-link">
               <ArrowLeft size={18} />
               Workspaces
             </Link>
-            <h1 className="wv-title">{workspace.name}</h1>
-            {workspace.description && <p className="wv-desc">{workspace.description}</p>}
+            <h1 className="page-title">{workspace.name}</h1>
+            {workspace.description && <p className="page-sub">{workspace.description}</p>}
           </div>
-          <div className="wv-actions">
+          <div className="page-actions">
             <Button variant="secondary" size="md" onClick={() => { setSettingsName(workspace.name || ''); setSettingsDesc(workspace.description || ''); setShowSettings(true); }}>
               <Settings size={18} />
               Settings
@@ -118,13 +118,13 @@ export default function WorkspaceView() {
           </div>
         </div>
 
-        <div className="wv-tabs">
+        <div className="tabs-bar">
           {tabs.map((tab) => {
             const isSummary = tab.id === 'summary';
             const content = (
               <button
                 key={tab.id}
-                className={`wv-tab-btn ${activeTab === tab.id ? 'active' : ''}`}
+                className={`tab-btn ${activeTab === tab.id ? 'active' : ''}`}
                 onClick={() => setActiveTab(tab.id)}
               >
                 {tab.icon}
@@ -136,7 +136,7 @@ export default function WorkspaceView() {
                 <Link
                   key={tab.id}
                   to={`/workspaces/${id}/summary`}
-                  className={`wv-tab-btn ${activeTab === tab.id ? 'active' : ''}`}
+                  className={`tab-btn ${activeTab === tab.id ? 'active' : ''}`}
                   style={{ textDecoration: 'none' }}
                 >
                   {tab.icon}
@@ -148,14 +148,14 @@ export default function WorkspaceView() {
           })}
         </div>
 
-        <div className="wv-tab-content">
+        <div className="tab-content">
           {activeTab === 'expenses' && (
-            <div className="wv-expenses">
+            <div>
               {expensesLoading ? (
-                <div className="wv-loading" style={{ padding: '40px' }}>Loading expenses...</div>
+                <div className="loading-state">Loading expenses...</div>
               ) : expenses.length === 0 ? (
-                <div className="wv-empty">
-                  <Receipt size={48} className="wv-empty-icon" />
+                <div className="empty-state">
+                  <div className="empty-state-icon"><Receipt size={24} /></div>
                   <h3>No expenses yet</h3>
                   <p>Upload your first receipt to start tracking.</p>
                   <Button variant="primary" style={{ marginTop: '16px' }} onClick={() => setIsModalOpen(true)}>
@@ -163,21 +163,21 @@ export default function WorkspaceView() {
                   </Button>
                 </div>
               ) : (
-                <div className="wv-expense-list">
-                  <div className="wv-expense-header">
+                <div className="data-row-list">
+                  <div className="data-row-header">
                     <span>Date</span>
-                    <span className="wv-exp-col-merchant">Merchant</span>
+                    <span className="data-row-col--wide">Merchant</span>
                     <span>Amount</span>
                     <span>Status</span>
                     <span></span>
                   </div>
                   {expenses.map((e) => (
-                    <Link key={e.id} to={`/expenses/${e.id}`} className="wv-expense-row">
-                      <span className="wv-exp-cell-date">{e.expense_date ? new Date(e.expense_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : '—'}</span>
-                      <span className="wv-exp-col-merchant wv-exp-cell-merchant">{e.merchant || '—'}</span>
-                      <span className="wv-exp-cell-amount">{e.currency || 'USD'} ${(parseFloat(e.amount) || 0).toFixed(2)}</span>
+                    <Link key={e.id} to={`/expenses/${e.id}`} className="data-row-item">
+                      <span className="data-row-col--date">{e.expense_date ? new Date(e.expense_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : '—'}</span>
+                      <span className="data-row-col--wide data-row-col--merchant">{e.merchant || '—'}</span>
+                      <span className="data-row-col--amount">{e.currency || 'USD'} ${(parseFloat(e.amount) || 0).toFixed(2)}</span>
                       <span>
-                        <span className={`wv-exp-pill wv-exp-pill--${e.status}`}>{e.status}</span>
+                        <span className={`badge badge--${e.status}`}>{e.status}</span>
                       </span>
                       <span><Eye size={16} /></span>
                     </Link>
@@ -188,30 +188,30 @@ export default function WorkspaceView() {
           )}
 
           {activeTab === 'members' && (
-            <div className="wv-members">
+            <div className="members-list">
               {workspace.members?.length > 0 ? (
                 workspace.members.map((m, i) => {
                   const isOwner = m.id === workspace.owner_id;
                   const isSelf = m.id === user?.id;
                   const canManage = user?.id === workspace.owner_id || workspace.members.find((mm) => mm.id === user?.id)?.role === 'admin';
                   return (
-                    <div key={i} className="wv-member-item">
-                      <div className={`wv-member-avatar ${m.role === 'client' ? 'client' : ''}`}>
+                    <div key={i} className="member-item">
+                      <div className={`member-avatar ${m.role === 'client' ? 'member-avatar--client' : ''}`}>
                         {m.name ? m.name.split(' ').map((n) => n[0]).join('').slice(0, 2).toUpperCase() : '??'}
                       </div>
-                      <div className="wv-member-info">
-                        <p className="wv-member-name">{m.name}{isOwner ? ' (Owner)' : isSelf ? ' (You)' : ''}</p>
-                        <p className="wv-member-email">{m.email}</p>
+                      <div className="member-info">
+                        <p className="member-name">{m.name}{isOwner ? ' (Owner)' : isSelf ? ' (You)' : ''}</p>
+                        <p className="member-email">{m.email}</p>
                       </div>
-                      <div className="wv-member-role">{m.role}</div>
+                      <div className="member-role-badge">{m.role}</div>
                       {canManage && !isOwner && (
-                        <div className="wv-member-menu-wrap">
+                        <div className="member-menu-wrap">
                           <Button variant="ghost" size="sm" onClick={() => setMenuMember(menuMember === m.id ? null : m.id)}>
                             <MoreVertical size={16} />
                           </Button>
                           {menuMember === m.id && (
-                            <div className="wv-member-menu">
-                              <button className="wv-menu-item" onClick={async () => {
+                            <div className="member-menu">
+                              <button className="member-menu-item" onClick={async () => {
                                 try {
                                   await workspaceService.updateMemberRole(id, m.id, m.role === 'admin' ? 'member' : 'admin');
                                   showToast('Role updated', 'success');
@@ -224,7 +224,7 @@ export default function WorkspaceView() {
                                 <Shield size={14} />
                                 {m.role === 'admin' ? 'Demote to Member' : 'Promote to Admin'}
                               </button>
-                              <button className="wv-menu-item wv-menu-item-danger" onClick={() => { setRemoveConfirm(m); setMenuMember(null); }}>
+                              <button className="member-menu-item member-menu-item--danger" onClick={() => { setRemoveConfirm(m); setMenuMember(null); }}>
                                 <Trash2 size={14} />
                                 Remove
                               </button>
@@ -236,8 +236,8 @@ export default function WorkspaceView() {
                   );
                 })
               ) : (
-                <div className="wv-empty">
-                  <Users size={48} className="wv-empty-icon" />
+                <div className="empty-state">
+                  <div className="empty-state-icon"><Users size={24} /></div>
                   <h3>No members yet</h3>
                   <p>Invite clients or team members to this workspace.</p>
                   <Button variant="primary" style={{ marginTop: '16px' }} onClick={() => setShowInvite(true)}>
@@ -252,19 +252,19 @@ export default function WorkspaceView() {
       </div>
 
       {showInvite && (
-        <div className="wv-backdrop" onClick={() => setShowInvite(false)}>
-          <div className="wv-invite-modal" onClick={(e) => e.stopPropagation()}>
-            <div className="wv-invite-header">
+        <div className="overlay-backdrop" onClick={() => setShowInvite(false)}>
+          <div className="overlay-card" onClick={(e) => e.stopPropagation()}>
+            <div className="overlay-header">
               <h2>Invite Member</h2>
-              <button className="wv-invite-close" onClick={() => setShowInvite(false)}><X size={20} /></button>
+              <button className="overlay-close" onClick={() => setShowInvite(false)}><X size={20} /></button>
             </div>
             <form onSubmit={handleInvite}>
-              <div className="wv-invite-body">
-                {inviteError && <div className="wv-invite-error">{inviteError}</div>}
-                <div className="wv-invite-field">
+              <div className="overlay-body">
+                {inviteError && <div className="overlay-error">{inviteError}</div>}
+                <div className="form-field">
                   <label>Email Address</label>
                   <input
-                    className="wv-input"
+                    className="field-input"
                     type="email"
                     placeholder="colleague@company.com"
                     value={inviteEmail}
@@ -272,15 +272,15 @@ export default function WorkspaceView() {
                     required
                   />
                 </div>
-                <div className="wv-invite-field">
+                <div className="form-field">
                   <label>Role</label>
-                  <select className="wv-select" value={inviteRole} onChange={(e) => setInviteRole(e.target.value)}>
+                  <select className="field-select" value={inviteRole} onChange={(e) => setInviteRole(e.target.value)}>
                     <option value="member">Member</option>
                     <option value="client">Client</option>
                   </select>
                 </div>
               </div>
-              <div className="wv-invite-footer">
+              <div className="overlay-footer">
                 <Button variant="ghost" type="button" onClick={() => setShowInvite(false)}>Cancel</Button>
                 <Button variant="primary" type="submit" disabled={inviting || !inviteEmail.trim()}>
                   {inviting ? 'Sending...' : 'Send Invite'}
@@ -308,17 +308,17 @@ export default function WorkspaceView() {
               setSavingSettings(false);
             }
           }}>
-            <div className="wv-invite-body">
-              <div className="wv-invite-field">
+            <div className="overlay-body">
+              <div className="form-field">
                 <label>Name</label>
-                <input className="wv-input" value={settingsName} onChange={(e) => setSettingsName(e.target.value)} required />
+                <input className="field-input" value={settingsName} onChange={(e) => setSettingsName(e.target.value)} required />
               </div>
-              <div className="wv-invite-field">
+              <div className="form-field">
                 <label>Description</label>
-                <textarea className="wv-input" rows={3} value={settingsDesc} onChange={(e) => setSettingsDesc(e.target.value)} style={{ resize: 'vertical' }} />
+                <textarea className="field-input" rows={3} value={settingsDesc} onChange={(e) => setSettingsDesc(e.target.value)} />
               </div>
             </div>
-            <div className="wv-invite-footer">
+            <div className="overlay-footer">
               <Button variant="ghost" type="button" onClick={() => setShowSettings(false)}>Cancel</Button>
               <Button variant="primary" type="submit" disabled={savingSettings || !settingsName.trim()}>
                 {savingSettings ? 'Saving...' : 'Save'}
@@ -353,349 +353,6 @@ export default function WorkspaceView() {
           </div>
         </Modal>
       )}
-
-      <style>{`
-        .wv-page { padding: 4px 0; }
-        .wv-header {
-          display: flex;
-          justify-content: space-between;
-          align-items: flex-start;
-          margin-bottom: 28px;
-        }
-        .wv-back {
-          display: inline-flex;
-          align-items: center;
-          gap: 6px;
-          font-size: 13px;
-          font-weight: 600;
-          color: var(--color-on-surface-variant);
-          text-decoration: none;
-          margin-bottom: 12px;
-          transition: color 0.15s ease;
-        }
-        .wv-back:hover { color: var(--color-on-surface); }
-        .wv-title {
-          font-size: 28px;
-          font-weight: 700;
-          color: var(--color-on-surface);
-          letter-spacing: -0.5px;
-          margin-bottom: 4px;
-        }
-        .wv-desc {
-          font-size: 15px;
-          color: var(--color-on-surface-variant);
-        }
-        .wv-actions { display: flex; gap: 12px; flex-shrink: 0; }
-
-        .wv-tabs {
-          display: flex;
-          gap: 32px;
-          border-bottom: 1px solid var(--color-outline-variant);
-          margin-bottom: 32px;
-        }
-        .wv-tab-btn {
-          background: none;
-          border: none;
-          padding: 12px 4px;
-          color: var(--color-on-surface-variant);
-          font-family: 'Space Grotesk', sans-serif;
-          font-size: 14px;
-          font-weight: 500;
-          cursor: pointer;
-          display: flex;
-          align-items: center;
-          gap: 8px;
-          position: relative;
-          transition: color 0.15s ease;
-        }
-        .wv-tab-btn:hover { color: var(--color-on-surface); }
-        .wv-tab-btn.active { color: var(--color-primary); font-weight: 600; }
-        .wv-tab-btn.active::after {
-          content: '';
-          position: absolute;
-          bottom: -1px;
-          left: 0;
-          right: 0;
-          height: 2px;
-          background: var(--color-primary);
-          border-radius: 1px;
-        }
-
-        .wv-empty {
-          text-align: center;
-          padding: 80px 0;
-          background: var(--color-surface);
-          border-radius: 16px;
-          border: 2px dashed var(--color-outline-variant);
-        }
-        .wv-empty-icon {
-          color: var(--color-outline-variant);
-          margin-bottom: 16px;
-        }
-        .wv-empty h3 {
-          font-size: 18px;
-          font-weight: 700;
-          color: var(--color-on-surface);
-          margin-bottom: 8px;
-        }
-        .wv-empty p {
-          font-size: 14px;
-          color: var(--color-on-surface-variant);
-        }
-
-        .wv-members {
-          display: flex;
-          flex-direction: column;
-          gap: 12px;
-        }
-        .wv-member-item {
-          display: flex;
-          align-items: center;
-          padding: 16px 20px;
-          background: var(--color-surface);
-          border-radius: 14px;
-          border: 1px solid var(--color-outline-variant);
-          transition: box-shadow 0.15s ease;
-        }
-        .wv-member-item:hover {
-          box-shadow: 0 2px 8px rgba(0,0,0,0.04);
-        }
-        .wv-member-avatar {
-          width: 40px;
-          height: 40px;
-          background: var(--color-secondary-container);
-          color: var(--color-on-secondary-container);
-          border-radius: 50%;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          font-weight: 700;
-          margin-right: 16px;
-          flex-shrink: 0;
-        }
-        .wv-member-avatar.client {
-          background: var(--color-tertiary-container);
-          color: var(--color-on-tertiary-container);
-        }
-        .wv-member-info { flex: 1; min-width: 0; }
-        .wv-member-name {
-          font-weight: 600;
-          color: var(--color-on-surface);
-          margin-bottom: 2px;
-        }
-        .wv-member-email {
-          font-size: 13px;
-          color: var(--color-on-surface-variant);
-        }
-        .wv-member-role {
-          font-size: 12px;
-          font-weight: 600;
-          padding: 4px 12px;
-          background: var(--color-surface-container);
-          color: var(--color-on-surface-variant);
-          border-radius: 20px;
-          margin: 0 20px;
-          text-transform: capitalize;
-        }
-        .wv-loading {
-          padding: 60px;
-          text-align: center;
-          color: var(--color-on-surface-variant);
-          font-size: 15px;
-        }
-
-        .wv-expense-list {
-          background: var(--color-surface);
-          border-radius: 16px;
-          border: 1px solid var(--color-outline-variant);
-          overflow: hidden;
-        }
-        .wv-expense-header {
-          display: flex;
-          padding: 12px 20px;
-          background: var(--color-surface-container-low);
-          font-size: 12px;
-          font-weight: 600;
-          color: var(--color-on-surface-variant);
-          text-transform: uppercase;
-          letter-spacing: 0.5px;
-        }
-        .wv-expense-header span, .wv-expense-row span { flex: 1; }
-        .wv-exp-col-merchant { flex: 2 !important; }
-        .wv-expense-row {
-          display: flex;
-          padding: 12px 20px;
-          align-items: center;
-          border-bottom: 1px solid var(--color-outline-variant);
-          font-size: 14px;
-          color: var(--color-on-surface);
-          text-decoration: none;
-          transition: background 0.15s ease;
-        }
-        .wv-expense-row:last-child { border-bottom: none; }
-        .wv-expense-row:hover { background: var(--color-surface-container-low); }
-        .wv-exp-cell-date { color: var(--color-on-surface-variant); white-space: nowrap; }
-        .wv-exp-cell-merchant { font-weight: 600; }
-        .wv-exp-cell-amount { font-weight: 700; white-space: nowrap; }
-        .wv-exp-pill {
-          display: inline-block;
-          padding: 3px 10px;
-          border-radius: 20px;
-          font-size: 11px;
-          font-weight: 600;
-          text-transform: capitalize;
-        }
-        .wv-exp-pill--submitted, .wv-exp-pill--draft { background: var(--color-surface-container); color: var(--color-on-surface-variant); }
-        .wv-exp-pill--pending { background: var(--color-secondary-container); color: var(--color-secondary); }
-        .wv-exp-pill--approved { background: var(--color-tertiary-container); color: var(--color-tertiary); }
-        .wv-exp-pill--rejected { background: var(--color-error-container); color: var(--color-error); }
-
-        .wv-backdrop {
-          position: fixed;
-          top: 0; left: 0; right: 0; bottom: 0;
-          background: rgba(0,0,0,0.5);
-          backdrop-filter: blur(12px);
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          z-index: 2000;
-          animation: fadeIn 0.25s ease-out;
-        }
-        .wv-invite-modal {
-          background: var(--color-surface);
-          width: 100%;
-          max-width: 440px;
-          border-radius: 20px;
-          box-shadow: 0 24px 80px rgba(0,0,0,0.15);
-          animation: slideUp 0.35s cubic-bezier(0.16, 1, 0.3, 1);
-          overflow: hidden;
-        }
-        .wv-invite-header {
-          display: flex;
-          justify-content: space-between;
-          align-items: center;
-          padding: 24px 28px;
-          border-bottom: 1px solid var(--color-outline-variant);
-        }
-        .wv-invite-header h2 {
-          font-size: 20px;
-          font-weight: 700;
-          color: var(--color-on-surface);
-        }
-        .wv-invite-close {
-          background: none;
-          border: none;
-          color: var(--color-on-surface-variant);
-          cursor: pointer;
-          padding: 4px;
-          border-radius: 8px;
-          transition: background 0.15s ease;
-        }
-        .wv-invite-close:hover {
-          background: var(--color-surface-container);
-          color: var(--color-on-surface);
-        }
-        .wv-invite-body {
-          padding: 28px;
-          display: flex;
-          flex-direction: column;
-          gap: 20px;
-        }
-        .wv-invite-error {
-          background: rgba(239, 68, 68, 0.1);
-          color: #ef4444;
-          padding: 12px 16px;
-          border-radius: 10px;
-          font-size: 13px;
-          font-weight: 500;
-          border: 1px solid rgba(239, 68, 68, 0.25);
-        }
-        .wv-invite-field label {
-          display: block;
-          font-size: 13px;
-          font-weight: 500;
-          color: var(--color-on-surface-variant);
-          margin-bottom: 6px;
-        }
-        .wv-input {
-          width: 100%;
-          padding: 10px 14px;
-          border-radius: 10px;
-          border: 1.5px solid var(--color-outline-variant);
-          background: var(--color-surface);
-          color: var(--color-on-surface);
-          font-family: 'Space Grotesk', sans-serif;
-          font-size: 14px;
-          transition: border-color 0.15s ease;
-        }
-        .wv-input:focus {
-          outline: none;
-          border-color: var(--color-primary);
-          box-shadow: 0 0 0 3px rgba(0, 113, 227, 0.1);
-        }
-        .wv-select {
-          width: 100%;
-          padding: 10px 14px;
-          border-radius: 10px;
-          border: 1.5px solid var(--color-outline-variant);
-          background: var(--color-surface);
-          color: var(--color-on-surface);
-          font-family: 'Space Grotesk', sans-serif;
-          font-size: 14px;
-          cursor: pointer;
-        }
-        .wv-select:focus {
-          outline: none;
-          border-color: var(--color-primary);
-        }
-        .wv-invite-footer {
-          padding: 20px 28px;
-          display: flex;
-          justify-content: flex-end;
-          gap: 12px;
-          border-top: 1px solid var(--color-outline-variant);
-        }
-
-        .wv-member-menu-wrap { position: relative; }
-        .wv-member-menu {
-          position: absolute;
-          right: 0;
-          top: 100%;
-          background: var(--color-surface);
-          border: 1px solid var(--color-outline-variant);
-          border-radius: 10px;
-          box-shadow: 0 8px 24px rgba(0,0,0,0.1);
-          min-width: 180px;
-          z-index: 100;
-          overflow: hidden;
-          animation: fadeIn 0.15s ease-out;
-        }
-        .wv-menu-item {
-          display: flex;
-          align-items: center;
-          gap: 8px;
-          width: 100%;
-          padding: 10px 14px;
-          background: none;
-          border: none;
-          font-family: 'Space Grotesk', sans-serif;
-          font-size: 13px;
-          font-weight: 500;
-          color: var(--color-on-surface);
-          cursor: pointer;
-          transition: background 0.1s ease;
-          text-align: left;
-        }
-        .wv-menu-item:hover { background: var(--color-surface-container); }
-        .wv-menu-item-danger { color: #ef4444; }
-        .wv-menu-item-danger:hover { background: rgba(239,68,68,0.08); }
-
-        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
-        @keyframes slideUp {
-          from { transform: translateY(24px) scale(0.98); opacity: 0; }
-          to { transform: translateY(0) scale(1); opacity: 1; }
-        }
-      `}</style>
     </AppShell>
   );
 }

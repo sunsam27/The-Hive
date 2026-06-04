@@ -1,4 +1,4 @@
-import React from 'react';
+
 import { Link } from 'react-router-dom';
 
 const AuthLayout = ({ children, title, subtitle }) => {
@@ -22,16 +22,9 @@ const AuthLayout = ({ children, title, subtitle }) => {
           align-items: center;
           justify-content: center;
           position: relative;
-          background: #ffffff;
+          background: var(--color-surface, #ffffff);
           background-image: radial-gradient(circle at 20% 100%, var(--color-primary-container) 0%, transparent 60%);
           padding: 20px;
-          --color-surface: #f8f8fa;
-          --color-on-surface: hsl(240, 3%, 12%);
-          --color-on-surface-variant: hsl(240, 2%, 48%);
-          --color-outline-variant: hsl(240, 6%, 86%);
-          --color-primary-container: hsl(210, 75%, 93%);
-          --color-surface-container: hsl(240, 6%, 92%);
-          --color-tertiary: hsl(160, 55%, 38%);
         }
         .auth-card {
           width: 100%;
@@ -89,6 +82,13 @@ const AuthLayout = ({ children, title, subtitle }) => {
           color: var(--color-primary);
           text-decoration: none;
           font-weight: 600;
+        }
+
+        @media (max-width: 480px) {
+          .auth-container { padding: 12px; }
+          .auth-card { padding: 24px; border-radius: 16px; }
+          .back-to-home { top: 12px; left: 12px; font-size: 13px; }
+          .auth-title { font-size: 20px; }
         }
       `}</style>
     </div>

@@ -1,4 +1,6 @@
 @import './tokens.css';
+@import './components.css';
+@import './utilities.css';
 
 /* Modern CSS Reset */
 *, *::before, *::after {
@@ -15,6 +17,7 @@ body {
   font-family: 'Space Grotesk', system-ui, -apple-system, sans-serif;
   background-color: var(--color-background);
   color: var(--color-on-background);
+  transition: background-color 0.3s ease, color 0.3s ease;
 }
 
 img, picture, video, canvas, svg {
@@ -53,22 +56,27 @@ p, h1, h2, h3, h4, h5, h6 {
   background: var(--color-outline);
 }
 
-/* Accessibility */
-.sr-only {
-  position: absolute;
-  width: 1px;
-  height: 1px;
-  padding: 0;
-  margin: -1px;
-  overflow: hidden;
-  clip: rect(0, 0, 0, 0);
-  white-space: nowrap;
-  border-width: 0;
-}
-
 /* Transitions */
 :root {
   --transition-fast: 150ms cubic-bezier(0.4, 0, 0.2, 1);
   --transition-normal: 250ms cubic-bezier(0.4, 0, 0.2, 1);
   --transition-slow: 350ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Smooth theme transitions on all color-bearing elements */
+.sidebar,
+.app-shell,
+.main-content,
+.content-container,
+.card-padded,
+.stat-card,
+.activity-card,
+.grid-card,
+.data-row-list,
+.data-table,
+.member-item,
+.empty-state,
+.overlay-backdrop,
+.overlay-card {
+  transition: background-color 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease;
 }

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import { Receipt, Users, BarChart3, Shield, ArrowRight, Sparkles, ChevronLeft, ChevronRight } from 'lucide-react';
 
