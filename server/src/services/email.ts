@@ -5,7 +5,7 @@ const resend = new Resend(process.env.RESEND_API_KEY);
 const FROM = process.env.EMAIL_FROM || 'onboarding@resend.dev';
 
 export async function sendVerificationEmail(to: string, name: string, token: string) {
-  const baseUrl = process.env.CLIENT_URL || 'http://localhost:5173';
+  const baseUrl = process.env.FRONTEND_URL || process.env.CLIENT_URL || 'http://localhost:5173';
   const link = `${baseUrl}/verify-email/${token}`;
 
   const { data, error } = await resend.emails.send({
@@ -32,7 +32,7 @@ export async function sendVerificationEmail(to: string, name: string, token: str
 }
 
 export async function sendResetEmail(to: string, name: string, token: string) {
-  const baseUrl = process.env.CLIENT_URL || 'http://localhost:5173';
+  const baseUrl = process.env.FRONTEND_URL || process.env.CLIENT_URL || 'http://localhost:5173';
   const link = `${baseUrl}/reset-password?token=${token}`;
 
   const { data, error } = await resend.emails.send({

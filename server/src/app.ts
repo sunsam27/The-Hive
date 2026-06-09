@@ -2,11 +2,14 @@ import express from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
 import path from 'path';
+import fs from 'fs';
 import routes from './routes/index.js';
 import uploadRoutes from './routes/uploads.routes.js';
 import { errorHandler } from './middleware/errorHandler.js';
 
 const app = express();
+
+const clientUrl = process.env.FRONTEND_URL || process.env.CLIENT_URL || 'http://localhost:5173';
 
 app.use(helmet({
   contentSecurityPolicy: {
@@ -16,7 +19,7 @@ app.use(helmet({
       fontSrc: ["'self'", "https:", "data:"],
       formAction: ["'self'"],
       frameAncestors: ["'self'"],
-      imgSrc: ["'self'", "data:", process.env.CLIENT_URL || 'http://localhost:5173'],
+      imgSrc: ["'self'", "data:", clientUrl],
       objectSrc: ["'none'"],
       scriptSrc: ["'self'"],
       scriptSrcAttr: ["'none'"],
@@ -25,10 +28,7 @@ app.use(helmet({
     },
   },
 }));
-const allowedOrigins = [
-  process.env.CLIENT_URL || 'http://localhost:5173',
-  'http://localhost:5173',
-];
+const allowedOrigins = [clientUrl, 'http://localhost:5173'];
 app.use(cors({
   origin: (origin, cb) => {
     if (!origin || allowedOrigins.includes(origin)) return cb(null, true);
@@ -37,7 +37,9 @@ app.use(cors({
 }));
 app.use(express.json({ limit: '5mb' }));
 
-app.use('/uploads/avatars', express.static(path.resolve('uploads/avatars')));
+if (fs.existsSync(path.resolve('uploads/avatars'))) {
+  app.use('/uploads/avatars', express.static(path.resolve('uploads/avatars')));
+}
 app.use('/uploads', uploadRoutes);
 
 app.use('/api', routes);
