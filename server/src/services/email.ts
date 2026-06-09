@@ -6,7 +6,7 @@ const FROM = process.env.EMAIL_FROM || 'onboarding@resend.dev';
 
 export async function sendVerificationEmail(to: string, name: string, token: string) {
   const baseUrl = process.env.CLIENT_URL || 'http://localhost:5173';
-  const link = `${baseUrl}/verify-email?token=${token}`;
+  const link = `${baseUrl}/verify-email/${token}`;
 
   const { data, error } = await resend.emails.send({
     from: FROM,

@@ -14,7 +14,7 @@ export const authService = {
   },
 
   verifyEmail(token) {
-    return api.get(`/auth/verify/${token}`);
+    return api.get(`/auth/verify-email/${token}`);
   },
 
   forgotPassword(email) {

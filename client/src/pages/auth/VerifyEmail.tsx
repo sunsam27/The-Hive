@@ -1,11 +1,11 @@
 import { useEffect, useRef, useState } from 'react';
-import { useSearchParams, Link } from 'react-router-dom';
+import { useParams, Link } from 'react-router-dom';
 import { authService } from '../../services/authService';
 import AuthLayout from '../../components/layout/AuthLayout';
 import { CheckCircle2, XCircle, Loader2 } from 'lucide-react';
 
 export default function VerifyEmail() {
-  const [searchParams] = useSearchParams();
+  const { token } = useParams();
   const [status, setStatus] = useState('loading');
   const called = useRef(false);
 
@@ -13,7 +13,6 @@ export default function VerifyEmail() {
     if (called.current) return;
     called.current = true;
 
-    const token = searchParams.get('token');
     if (!token) { setStatus('invalid'); return; }
 
     authService.verifyEmail(token)

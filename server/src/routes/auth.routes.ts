@@ -22,7 +22,7 @@ const signupSchema = z.object({
 
 router.post('/login', loginLimiter, validate(loginSchema), authController.login);
 router.post('/signup', signupLimiter, validate(signupSchema), authController.signup);
-router.get('/verify/:token', authController.verifyEmail);
+router.get('/verify-email/:token', authController.verifyEmail);
 const forgotPasswordSchema = z.object({
   email: z.string().email(),
 });
