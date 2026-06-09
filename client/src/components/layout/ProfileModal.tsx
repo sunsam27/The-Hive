@@ -5,6 +5,7 @@ import Button from '../ui/Button';
 import { authService } from '../../services/authService';
 import { useAuth } from '../../context/AuthContext';
 import { useToast } from '../../hooks/useToast';
+import { getFileUrl } from '../../services/api';
 
 const ProfileModal = ({ isOpen, onClose }) => {
   const { user, setUser } = useAuth();
@@ -58,8 +59,6 @@ const ProfileModal = ({ isOpen, onClose }) => {
     onClose();
   }
 
-  const API_BASE = import.meta.env.VITE_API_URL?.replace('/api', '') || 'http://localhost:3001';
-
   return (
     <Modal isOpen={isOpen} onClose={handleClose} title="Profile Settings">
       <form onSubmit={handleSubmit}>
@@ -79,7 +78,7 @@ const ProfileModal = ({ isOpen, onClose }) => {
               {avatarPreview ? (
                 <img src={avatarPreview} alt="Preview" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
               ) : user?.avatar_url ? (
-                <img src={`${API_BASE}${user.avatar_url}`} alt="Avatar" style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                <img src={getFileUrl(user.avatar_url)} alt="Avatar" style={{ width: '100%', height: '100%', objectFit: 'cover' }}
                   onError={(e) => { e.target.style.display = 'none'; }} />
               ) : (
                 <User size={32} style={{ color: 'var(--color-on-secondary-container)' }} />

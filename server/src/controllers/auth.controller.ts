@@ -5,6 +5,7 @@ import crypto from 'crypto';
 import { createHash } from 'crypto';
 import db from '../db/index.js';
 import { sendVerificationEmail, sendResetEmail } from '../services/email.js';
+import { uploadFile } from '../utils/cloudinary.js';
 
 function hashToken(token: string) {
   return createHash('sha256').update(token).digest('hex');
@@ -162,7 +163,7 @@ export async function updateProfile(req: Request, res: Response, next: NextFunct
   try {
     const updates: Record<string, string> = {};
     if (req.validated?.name) updates.name = req.validated.name as string;
-    if (req.file) updates.avatar_url = `/uploads/avatars/${req.file.filename}`;
+    if (req.file) updates.avatar_url = await uploadFile(req.file.buffer, 'avatars');
 
     if (Object.keys(updates).length === 0) {
       return res.status(400).json({ error: 'Nothing to update' });

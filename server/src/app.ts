@@ -1,10 +1,7 @@
 import express from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
-import path from 'path';
-import fs from 'fs';
 import routes from './routes/index.js';
-import uploadRoutes from './routes/uploads.routes.js';
 import { errorHandler } from './middleware/errorHandler.js';
 
 const app = express();
@@ -28,7 +25,7 @@ app.use(helmet({
     },
   },
 }));
-const allowedOrigins = [clientUrl, 'http://localhost:5173'];
+const allowedOrigins = [clientUrl];
 app.use(cors({
   origin: (origin, cb) => {
     if (!origin || allowedOrigins.includes(origin)) return cb(null, true);
@@ -36,11 +33,6 @@ app.use(cors({
   },
 }));
 app.use(express.json({ limit: '5mb' }));
-
-if (fs.existsSync(path.resolve('uploads/avatars'))) {
-  app.use('/uploads/avatars', express.static(path.resolve('uploads/avatars')));
-}
-app.use('/uploads', uploadRoutes);
 
 app.use('/api', routes);
 

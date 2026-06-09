@@ -1,9 +1,8 @@
 import { Request, Response, NextFunction } from 'express';
-import fs from 'fs';
-import path from 'path';
 import db from '../db/index.js';
 import { checkExpenseAccess, checkWorkspaceAccess, checkReviewerRole } from '../utils/accessControl.js';
 import { logAudit } from '../utils/auditLog.js';
+import { uploadFile, deleteFile } from '../utils/cloudinary.js';
 
 const VALID_TRANSITIONS: Record<string, string[]> = {
   draft: ['submitted'],
@@ -241,9 +240,7 @@ export async function remove(req: Request, res: Response, next: NextFunction) {
       await logAudit(trx, req.user!.id, 'expense.deleted', 'expense', id, { title: expense.merchant });
 
       for (const r of receipts) {
-        const filename = r.file_url.replace('/uploads/receipts/', '');
-        const filePath = path.resolve('uploads/receipts', filename);
-        try { fs.unlinkSync(filePath); } catch { }
+        await deleteFile(r.file_url);
       }
     });
 
@@ -269,7 +266,7 @@ export async function pay(req: Request, res: Response, next: NextFunction) {
 
     const updates: Record<string, any> = { status: 'paid' };
     if (req.file) {
-      updates.paid_proof_url = `/uploads/proofs/${req.file.filename}`;
+      updates.paid_proof_url = await uploadFile(req.file.buffer, 'proofs');
     }
     if (req.body.note) {
       updates.paid_note = req.body.note;

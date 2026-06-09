@@ -1,9 +1,8 @@
 import { Request, Response, NextFunction } from 'express';
-import fs from 'fs';
-import path from 'path';
 import db from '../db/index.js';
 import { checkWorkspaceAccess } from '../utils/accessControl.js';
 import { logAudit } from '../utils/auditLog.js';
+import { deleteFile } from '../utils/cloudinary.js';
 
 export async function list(req: Request, res: Response, next: NextFunction) {
   try {
@@ -195,9 +194,7 @@ export async function deleteWorkspace(req: Request, res: Response, next: NextFun
         await trx('expenses').whereIn('id', expenseIds).del();
 
         for (const r of receipts) {
-          const filename = r.file_url.replace('/uploads/receipts/', '');
-          const filePath = path.resolve('uploads/receipts', filename);
-          try { fs.unlinkSync(filePath); } catch { }
+          await deleteFile(r.file_url);
         }
       }
 

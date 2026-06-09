@@ -11,6 +11,14 @@ api.interceptors.request.use((config) => {
   return config;
 });
 
+const SERVER_URL = import.meta.env.VITE_SERVER_URL || import.meta.env.VITE_API_URL?.replace('/api', '') || 'http://localhost:3001';
+
+export function getFileUrl(path: string | null | undefined): string | null {
+  if (!path) return null;
+  if (path.startsWith('http://') || path.startsWith('https://')) return path;
+  return `${SERVER_URL}${path}`;
+}
+
 api.interceptors.response.use(
   (res) => res,
   (err) => {

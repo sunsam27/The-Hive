@@ -1,8 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
-import fs from 'fs';
-import path from 'path';
 import db from '../db/index.js';
 import { checkExpenseAccess } from '../utils/accessControl.js';
+import { uploadFile, deleteFile } from '../utils/cloudinary.js';
 
 export async function upload(req: Request, res: Response, next: NextFunction) {
   try {
@@ -12,7 +11,7 @@ export async function upload(req: Request, res: Response, next: NextFunction) {
 
     if (!req.file) return res.status(400).json({ error: 'No file provided' });
 
-    const fileUrl = `/uploads/receipts/${req.file.filename}`;
+    const fileUrl = await uploadFile(req.file.buffer, 'receipts');
     const ocrRawText = req.body.ocr_raw_text || '';
 
     const [receipt] = await db('receipts')
@@ -59,10 +58,7 @@ export async function remove(req: Request, res: Response, next: NextFunction) {
     }
 
     await db('receipts').where({ id: receiptId }).del();
-
-    const filename = receipt.file_url.replace('/uploads/receipts/', '');
-    const filePath = path.resolve('uploads/receipts', filename);
-    try { fs.unlinkSync(filePath); } catch { }
+    await deleteFile(receipt.file_url);
 
     res.json({ message: 'Receipt removed' });
   } catch (err) {

@@ -29,19 +29,11 @@ const ExpenseDetail = () => {
   const { showToast } = useToast();
   const { token } = useAuth();
 
-  const API_BASE = import.meta.env.VITE_SERVER_URL || 'http://localhost:3001';
-
-  useEffect(() => {
-    if (!expenseId) return;
-    loadExpense();
-  }, [expenseId]);
-
-
-
   async function loadReceiptImage(r) {
     if (!token) return;
     try {
-      const res = await fetch(`${API_BASE}${r.file_url}`, {
+      const url = r.file_url.startsWith('http') ? r.file_url : `${import.meta.env.VITE_SERVER_URL || 'http://localhost:3001'}${r.file_url}`;
+      const res = await fetch(url, {
         headers: { Authorization: `Bearer ${token}` },
       });
       if (!res.ok) return;
@@ -72,7 +64,8 @@ const ExpenseDetail = () => {
   async function loadProofImage(url) {
     if (!token) return;
     try {
-      const res = await fetch(`${API_BASE}${url}`, {
+      const fetchUrl = url.startsWith('http') ? url : `${import.meta.env.VITE_SERVER_URL || 'http://localhost:3001'}${url}`;
+      const res = await fetch(fetchUrl, {
         headers: { Authorization: `Bearer ${token}` },
       });
       if (!res.ok) return;

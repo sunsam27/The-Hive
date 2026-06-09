@@ -12,6 +12,7 @@ import {
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import ProfileModal from './ProfileModal';
+import { getFileUrl } from '../../services/api';
 import ThemeToggle from '../ui/ThemeToggle';
 
 const Sidebar = () => {
@@ -25,8 +26,7 @@ const Sidebar = () => {
     if (!user?.avatar_url) { setAvatarBlob(null); return; }
     const token = localStorage.getItem('token');
     if (!token) return;
-    const API_BASE = import.meta.env.VITE_API_URL?.replace('/api', '') || 'http://localhost:3001';
-    fetch(`${API_BASE}${user.avatar_url}`, {
+    fetch(getFileUrl(user.avatar_url), {
       headers: { Authorization: `Bearer ${token}` },
     })
       .then((res) => { if (!res.ok) throw new Error(); return res.blob(); })
