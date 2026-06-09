@@ -26,9 +26,11 @@ app.use(helmet({
   },
 }));
 const allowedOrigins = [clientUrl];
+if (process.env.VERCEL_URL) allowedOrigins.push(`https://${process.env.VERCEL_URL}`);
 app.use(cors({
   origin: (origin, cb) => {
     if (!origin || allowedOrigins.includes(origin)) return cb(null, true);
+    if (origin && (origin.startsWith('https://the-hive-') && origin.endsWith('.vercel.app'))) return cb(null, true);
     cb(new Error(`CORS: origin '${origin}' not allowed`));
   },
 }));
