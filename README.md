@@ -10,13 +10,13 @@ A lightweight web application for freelancers and clients to manage expense reim
 
 | Layer          | Technology                          |
 |----------------|-------------------------------------|
-| Frontend       | React 18 + Vite                     |
+| Frontend       | React 19 + Vite                     |
 | Backend        | Node.js + Express                   |
 | Database       | PostgreSQL 15+                      |
-| OCR            | Tesseract.js (local, free)          |
-| File Storage   | Cloudinary (free tier)              |
-| Authentication | JWT (access + refresh tokens)       |
-| Deployment     | Vercel (frontend + serverless API)  |
+| OCR            | OCR.space API                       |
+| File Storage   | Local filesystem (`uploads/`)       |
+| Authentication | JWT (bearer token, 7-day expiry)    |
+| Deployment     | Vercel (frontend) + Node server     |
 
 ---
 
@@ -25,7 +25,8 @@ A lightweight web application for freelancers and clients to manage expense reim
 - **Node.js** ≥ 18.x
 - **npm** ≥ 9.x
 - **PostgreSQL** ≥ 15.x (local or hosted — e.g., [Supabase](https://supabase.com), [Neon](https://neon.tech))
-- **Cloudinary account** — [Sign up free](https://cloudinary.com/users/register_free)
+- **Resend account** — [Sign up free](https://resend.com) (email notifications)
+- **OCR.space API key** — [Get a free key](https://ocr.space/ocrapi)
 - **Git**
 
 ---
@@ -65,9 +66,8 @@ Edit `.env` with your values. See [ENV_SETUP.md](docs/ENV_SETUP.md) for a full r
 ```env
 DATABASE_URL=postgresql://user:password@localhost:5432/the_hive
 JWT_SECRET=your-secure-random-string-min-64-chars
-CLOUDINARY_CLOUD_NAME=your-cloud-name
-CLOUDINARY_API_KEY=your-api-key
-CLOUDINARY_API_SECRET=your-api-secret
+RESEND_API_KEY=re_xxxxxxxxxxxx
+OCR_SPACE_API_KEY=xxxxxxxxxxxxxxxxxxxxxxxxx
 ```
 
 ### 4. Set Up the Database
@@ -100,14 +100,15 @@ Open [http://localhost:5173](http://localhost:5173) in your browser.
 
 ## OCR Setup
 
-This project uses **Tesseract.js**, which runs entirely in Node.js — no external API keys or services required.
+Receipt scanning uses the **OCR.space API** (free tier: 500 requests/day).
 
-- Tesseract.js is installed as an npm dependency in `/server`.
-- On first run, it downloads language data (~15 MB for English) and caches it locally.
-- Supported receipt formats: **JPG, PNG, PDF** (PDF is converted to image first).
-- OCR results are always editable by the user — extraction is best-effort.
-
-**No additional setup is needed.** The OCR engine initializes automatically when the first receipt is uploaded.
+1. Sign up at [ocr.space](https://ocr.space/ocrapi) and get a free API key.
+2. Add it to `server/.env`:
+   ```env
+   OCR_SPACE_API_KEY=your-api-key-here
+   ```
+3. Supported formats: **JPEG, PNG, WebP, PDF**.
+4. OCR results are always editable — extraction is best-effort.
 
 ---
 
@@ -122,7 +123,8 @@ the-hive/
 │   │   ├── hooks/          # Custom React hooks
 │   │   ├── services/       # API client functions
 │   │   ├── context/        # React context providers
-│   │   ├── utils/          # Utility functions
+│   │   ├── constants/      # Shared constants (currencies)
+│   │   ├── styles/         # Global CSS + design tokens
 │   │   └── assets/         # Static assets (icons, images)
 │   └── public/
 ├── server/                 # Node.js + Express backend
@@ -130,9 +132,9 @@ the-hive/
 │   │   ├── routes/         # Express route handlers
 │   │   ├── controllers/    # Business logic controllers
 │   │   ├── middleware/      # Auth, validation, error handling
-│   │   ├── models/         # Database query functions
-│   │   ├── services/       # OCR, file upload, email services
-│   │   ├── utils/          # Helpers, validators, constants
+│   │   ├── services/       # OCR, email services
+│   │   ├── utils/          # Helpers, access control, audit log
+│   │   ├── config/         # Knex database config
 │   │   └── db/             # Migrations, seeds, connection
 │   └── .env.example
 ├── docs/                   # Project documentation

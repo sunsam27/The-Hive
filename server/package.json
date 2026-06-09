@@ -4,10 +4,11 @@
   "version": "0.1.0",
   "type": "module",
   "scripts": {
-    "dev": "node --watch src/index.js",
-    "start": "node src/index.js",
-    "migrate": "node --import dotenv/config -e \"import db from './src/db/index.js'; db.migrate.latest().then(() => { console.log('Migrations complete'); process.exit(0); }).catch(e => { console.error(e); process.exit(1); });\"",
-    "seed": "node --import dotenv/config -e \"import db from './src/db/index.js'; db.seed.run().then(() => { console.log('Seeds complete'); process.exit(0); }).catch(e => { console.error(e); process.exit(1); });\"",
+    "dev": "tsx watch src/index.ts",
+    "start": "node --import dotenv/config dist/index.js",
+    "build": "tsc",
+    "migrate": "tsx --import dotenv/config -e \"import db from './src/db/index.ts'; db.migrate.latest().then(() => { console.log('Migrations complete'); process.exit(0); }).catch(e => { console.error(e); process.exit(1); });\"",
+    "seed": "tsx --import dotenv/config -e \"import db from './src/db/index.ts'; db.seed.run().then(() => { console.log('Seeds complete'); process.exit(0); }).catch(e => { console.error(e); process.exit(1); });\"",
     "lint": "eslint ."
   },
   "dependencies": {
@@ -20,13 +21,20 @@
     "jsonwebtoken": "^9.0.2",
     "knex": "^3.1.0",
     "multer": "^2.1.1",
-    "nodemailer": "^8.0.10",
     "pg": "^8.12.0",
     "resend": "^6.12.4",
     "zod": "^3.23.8"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
-    "globals": "^17.6.0"
+    "@types/bcryptjs": "^2.4.6",
+    "@types/cors": "^2.8.19",
+    "@types/express": "^5.0.6",
+    "@types/jsonwebtoken": "^9.0.10",
+    "@types/multer": "^2.1.0",
+    "@types/node": "^25.9.2",
+    "globals": "^17.6.0",
+    "tsx": "^4.22.4",
+    "typescript": "^6.0.3"
   }
 }
