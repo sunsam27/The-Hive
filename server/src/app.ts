@@ -6,6 +6,8 @@ import { errorHandler } from './middleware/errorHandler.js';
 
 const app = express();
 
+app.set('trust proxy', 1);
+
 const clientUrl = process.env.FRONTEND_URL || process.env.CLIENT_URL || 'http://localhost:5173';
 
 app.use(helmet({
