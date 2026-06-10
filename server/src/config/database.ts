@@ -8,7 +8,7 @@ const db = knex({
       ? { rejectUnauthorized: false }
       : false,
   },
-  pool: { min: 2, max: 10 },
+  pool: { min: 0, max: 5 },
   migrations: {
     directory: './src/db/migrations',
     extension: 'js',
