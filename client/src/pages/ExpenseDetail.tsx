@@ -29,6 +29,11 @@ const ExpenseDetail = () => {
   const { showToast } = useToast();
   const { token } = useAuth();
 
+  useEffect(() => {
+    if (!expenseId) return;
+    loadExpense();
+  }, [expenseId]);
+
   async function loadReceiptImage(r) {
     if (!token) return;
     try {
