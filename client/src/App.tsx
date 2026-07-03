@@ -15,6 +15,8 @@ import VerifyEmail from './pages/auth/VerifyEmail';
 import ResetPassword from './pages/auth/ResetPassword';
 import ChangePassword from './pages/auth/ChangePassword';
 import NotFound from './pages/NotFound';
+import InvoicesPage from './pages/InvoicesPage';
+import InvoiceCreate from './pages/InvoiceCreate';
 
 function App() {
   return (
@@ -36,6 +38,8 @@ function App() {
           <Route path="/expenses" element={<AuthGuard><ExpenseList /></AuthGuard>} />
           <Route path="/change-password" element={<AuthGuard><ChangePassword /></AuthGuard>} />
           <Route path="/expenses/:expenseId" element={<AuthGuard><ExpenseDetail /></AuthGuard>} />
+          <Route path="/invoices" element={<AuthGuard><InvoicesPage /></AuthGuard>} />
+          <Route path="/invoices/new" element={<AuthGuard><InvoiceCreate /></AuthGuard>} />
 
           <Route path="*" element={<NotFound />} />
         </Routes>

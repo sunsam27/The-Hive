@@ -206,12 +206,17 @@ export async function getById(req: Request, res: Response, next: NextFunction) {
     const receipts = await db('receipts').where({ expense_id: id });
     const tags = await db('expense_tags').where({ expense_id: id }).select('name');
 
+    let invoice = null;
+    if (expense.invoice_id) {
+      invoice = await db('invoices').where({ id: expense.invoice_id }).first();
+    }
+
     const member = await db('workspace_members')
       .where({ workspace_id: expense.workspace_id, user_id: req.user!.id })
       .first();
     const canReview = member && ['admin', 'client'].includes(member.role);
 
-    res.json({ ...expense, receipts, tags: tags.map((t: any) => t.name), canReview });
+    res.json({ ...expense, receipts, tags: tags.map((t: any) => t.name), canReview, invoice });
   } catch (err) {
     next(err);
   }

@@ -10,6 +10,7 @@ import EditExpenseModal from '../components/upload/EditExpenseModal';
 import PayModal from '../components/upload/PayModal';
 import Modal from '../components/ui/Modal';
 import { formatCurrency } from '../constants/currencies';
+import { paymentService } from '../services/paymentService';
 
 const ExpenseDetail = () => {
   const navigate = useNavigate();
@@ -25,6 +26,7 @@ const ExpenseDetail = () => {
   const [expandedImg, setExpandedImg] = useState(null);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [payModalOpen, setPayModalOpen] = useState(false);
+  const [payLoading, setPayLoading] = useState(false);
   const [proofBlob, setProofBlob] = useState(null);
   const { showToast } = useToast();
   const { token } = useAuth();
@@ -119,6 +121,23 @@ const ExpenseDetail = () => {
     } catch (err) {
       showToast(err?.response?.data?.error || 'Failed to delete', 'error');
       setActionLoading(false);
+    }
+  }
+
+  async function handlePayOnline() {
+    setPayLoading(true);
+    try {
+      const res = await paymentService.initiate(expenseId);
+      if (res.data.paymentUrl) {
+        window.open(res.data.paymentUrl, '_blank');
+        showToast('Payment page opened in new tab', 'success');
+      } else {
+        showToast('Payment link generated', 'success');
+      }
+    } catch (err) {
+      showToast(err?.response?.data?.error || 'Failed to initiate payment', 'error');
+    } finally {
+      setPayLoading(false);
     }
   }
 
@@ -293,38 +312,50 @@ const ExpenseDetail = () => {
             )}
 
             {expense.status === 'approved' && expense.canReview && (
-              <div className="ed-actions">
-                <Button variant="primary" style={{ flex: 1 }} onClick={() => setPayModalOpen(true)}>
+              <div className="ed-actions" style={{ flexDirection: 'column', gap: 8 }}>
+                <Button variant="primary" style={{ width: '100%' }} onClick={handlePayOnline} disabled={payLoading}>
                   <Check size={18} />
-                  Mark as Paid
+                  {payLoading ? 'Processing...' : 'Pay Online'}
+                </Button>
+                <Button variant="ghost" style={{ width: '100%' }} onClick={() => setPayModalOpen(true)}>
+                  <Check size={18} />
+                  Mark as Paid (External)
                 </Button>
               </div>
             )}
 
-            {expense.status === 'paid' && expense.paid_proof_url && (
+            {expense.status === 'paid' && (
               <div className="ed-paid-proof">
-                <h4>Proof of Payment</h4>
-                {expense.paid_note && <p className="ed-paid-note">{expense.paid_note}</p>}
-                {/\.(jpg|jpeg|png|webp)$/i.test(expense.paid_proof_url) ? (
-                  proofBlob ? (
-                    <img
-                      src={proofBlob}
-                      alt="Payment proof"
-                      className="ed-proof-img"
-                      onClick={() => setExpandedImg(proofBlob)}
-                    />
-                  ) : (
-                    <p className="ed-paid-loading">Loading proof...</p>
-                  )
+                <h4>Payment Info</h4>
+                {expense.paid_proof_url ? (
+                  <>
+                    {expense.paid_note && <p className="ed-paid-note">{expense.paid_note}</p>}
+                    {/\.(jpg|jpeg|png|webp)$/i.test(expense.paid_proof_url) ? (
+                      proofBlob ? (
+                        <img
+                          src={proofBlob}
+                          alt="Payment proof"
+                          className="ed-proof-img"
+                          onClick={() => setExpandedImg(proofBlob)}
+                        />
+                      ) : (
+                        <p className="ed-paid-loading">Loading proof...</p>
+                      )
+                    ) : (
+                      proofBlob ? (
+                        <button className="ed-receipt-file" onClick={() => { const a = document.createElement('a'); a.href = proofBlob; a.download = expense.paid_proof_url.split('/').pop(); a.click(); }}>
+                          <FileText size={16} />
+                          Download proof
+                        </button>
+                      ) : (
+                        <p className="ed-paid-loading">Loading proof...</p>
+                      )
+                    )}
+                  </>
                 ) : (
-                  proofBlob ? (
-                    <button className="ed-receipt-file" onClick={() => { const a = document.createElement('a'); a.href = proofBlob; a.download = expense.paid_proof_url.split('/').pop(); a.click(); }}>
-                      <FileText size={16} />
-                      Download proof
-                    </button>
-                  ) : (
-                    <p className="ed-paid-loading">Loading proof...</p>
-                  )
+                  <p className="ed-paid-note" style={{ color: 'var(--color-primary)' }}>
+                    Paid via online payment
+                  </p>
                 )}
               </div>
             )}

@@ -4,6 +4,7 @@ import {
   LayoutDashboard, 
   FolderKanban, 
   Receipt, 
+  FileText,
   LogOut, 
   User as UserIcon,
   KeyRound,
@@ -58,6 +59,7 @@ const Sidebar = () => {
     { name: 'Dashboard', icon: <LayoutDashboard size={20} />, path: '/dashboard' },
     { name: 'Workspaces', icon: <FolderKanban size={20} />, path: '/workspaces' },
     { name: 'All Expenses', icon: <Receipt size={20} />, path: '/expenses' },
+    { name: 'My Receipts', icon: <FileText size={20} />, path: '/invoices' },
   ];
 
   const handleNavClick = () => setMobileOpen(false);
