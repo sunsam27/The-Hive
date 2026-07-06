@@ -256,8 +256,9 @@ const Landing = () => {
         z-index: 1;
         background: linear-gradient(
           180deg,
-          rgba(255,255,255,0) 0%,
-          rgba(255,255,255,0.92) 100%
+          rgba(255,255,255,0.3) 0%,
+          rgba(255,255,255,0.85) 40%,
+          rgba(255,255,255,1) 100%
         );
         pointer-events: none;
       }
