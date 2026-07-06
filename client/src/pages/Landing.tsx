@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import { Receipt, Users, BarChart3, Shield, ArrowRight, Sparkles, ChevronLeft, ChevronRight } from 'lucide-react';
 import Lightfall from '../components/effects/Lightfall';
+import BorderGlow from '../components/ui/BorderGlow';
 
 const features = [
   { icon: <Receipt size={28} />, title: 'Smart Receipt Scanning', desc: 'Upload receipts and let AI extract amounts, merchants, and dates automatically.' },
@@ -122,11 +123,20 @@ const Landing = () => {
         <h2 className="features-title">Built for freelancers who work with clients</h2>
         <div className="features-grid">
           {features.map((f, i) => (
-            <div key={i} className="feature-card">
+            <BorderGlow
+              key={i}
+              backgroundColor="#ffffff"
+              borderRadius={16}
+              edgeSensitivity={25}
+              glowRadius={24}
+              glowIntensity={0.9}
+              coneSpread={25}
+              className="feature-card"
+            >
               <div className="feature-icon">{f.icon}</div>
               <h3 className="feature-title">{f.title}</h3>
               <p className="feature-desc">{f.desc}</p>
-            </div>
+            </BorderGlow>
           ))}
         </div>
       </div>
@@ -369,9 +379,9 @@ const Landing = () => {
         text-align: left;
       }
       .feature-card {
-        background: var(--color-surface);
         border: 1px solid var(--color-outline-variant);
-        border-radius: 16px;
+      }
+      .feature-card .border-glow-inner {
         padding: 28px;
       }
       .feature-icon {
