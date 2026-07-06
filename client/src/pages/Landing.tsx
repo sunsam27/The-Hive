@@ -58,7 +58,7 @@ const Landing = () => {
           twinkle={0.6}
           zoom={2.5}
           backgroundGlow={0.3}
-          opacity={0.6}
+          opacity={0.35}
           mouseInteraction={false}
           paused={false}
         />
@@ -256,8 +256,9 @@ const Landing = () => {
         z-index: 1;
         background: linear-gradient(
           180deg,
-          rgba(255,255,255,0) 0%,
-          rgba(255,255,255,0.92) 100%
+          rgba(255,255,255,1) 0%,
+          rgba(255,255,255,0.95) 60%,
+          rgba(255,255,255,0.6) 100%
         );
         pointer-events: none;
       }
