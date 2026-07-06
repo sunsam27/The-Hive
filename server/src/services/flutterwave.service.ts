@@ -1,11 +1,17 @@
 import Flutterwave from 'flutterwave-node-v3';
 
-const flw = new Flutterwave(
-  process.env.FLW_PUBLIC_KEY || '',
-  process.env.FLW_SECRET_KEY || '',
-);
+function getFlw(): Flutterwave {
+  const publicKey = process.env.FLW_PUBLIC_KEY;
+  const secretKey = process.env.FLW_SECRET_KEY;
+  if (!publicKey || !secretKey) {
+    throw new Error('Flutterwave not configured: FLW_PUBLIC_KEY and FLW_SECRET_KEY must be set');
+  }
+  return new Flutterwave(publicKey, secretKey);
+}
 
-const FLW_SECRET_HASH = process.env.FLW_SECRET_HASH || '';
+function getFlwSecretHash(): string {
+  return process.env.FLW_SECRET_HASH || '';
+}
 
 export interface InitiatePaymentParams {
   txRef: string;
@@ -17,6 +23,7 @@ export interface InitiatePaymentParams {
 }
 
 export async function initiatePayment(params: InitiatePaymentParams) {
+  const flw = getFlw();
   const payload = {
     tx_ref: params.txRef,
     amount: params.amount,
@@ -39,6 +46,7 @@ export async function initiatePayment(params: InitiatePaymentParams) {
 }
 
 export async function initiateCardPayment(params: InitiatePaymentParams) {
+  const flw = getFlw();
   const payload = {
     tx_ref: params.txRef,
     amount: params.amount,
@@ -58,14 +66,15 @@ export async function initiateCardPayment(params: InitiatePaymentParams) {
 }
 
 export async function verifyTransaction(transactionId: string) {
+  const flw = getFlw();
   const response = await flw.Transaction.verify({ id: transactionId });
   return response;
 }
 
-export function verifyWebhookSignature(signature: string | undefined, body: string): boolean {
-  if (!signature || !FLW_SECRET_HASH) return false;
-  const expectedHash = FLW_SECRET_HASH;
-  return signature === expectedHash;
+export function verifyWebhookSignature(signature: string | undefined): boolean {
+  const hash = getFlwSecretHash();
+  if (!signature || !hash) return false;
+  return signature === hash;
 }
 
 export function generateTxRef(expenseId: string): string {
