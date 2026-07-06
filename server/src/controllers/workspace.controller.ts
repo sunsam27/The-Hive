@@ -10,20 +10,24 @@ export async function list(req: Request, res: Response, next: NextFunction) {
     const limit = parseInt(req.query.limit as string) || 50;
     const offset = (page - 1) * limit;
 
-    let baseQuery = db('workspaces')
+    const userId = req.user!.id;
+
+    const countResult = await db('workspaces')
       .join('workspace_members', 'workspaces.id', 'workspace_members.workspace_id')
-      .where('workspace_members.user_id', req.user!.id);
+      .where('workspace_members.user_id', userId)
+      .countDistinct('workspaces.id as count')
+      .first();
+    const total = Number(countResult?.count ?? 0);
 
-    const { count } = (await baseQuery.clone().countDistinct('workspaces.id as count').first()) || { count: 0 };
-
-    const workspaces = await baseQuery
-      .clone()
+    const workspaces = await db('workspaces')
+      .join('workspace_members', 'workspaces.id', 'workspace_members.workspace_id')
+      .where('workspace_members.user_id', userId)
       .select('workspaces.*')
       .orderBy('workspaces.created_at', 'desc')
       .limit(limit)
       .offset(offset);
 
-    res.json({ data: workspaces, total: Number(count), page, limit });
+    res.json({ data: workspaces, total, page, limit });
   } catch (err) {
     next(err);
   }

@@ -125,12 +125,15 @@ const Landing = () => {
           {features.map((f, i) => (
             <BorderGlow
               key={i}
-              backgroundColor="#ffffff"
+              backgroundColor="#f4f4f8"
               borderRadius={16}
-              edgeSensitivity={25}
-              glowRadius={24}
-              glowIntensity={0.9}
+              edgeSensitivity={18}
+              glowRadius={28}
+              glowIntensity={1.8}
+              fillOpacity={0.8}
               coneSpread={25}
+              glowColor="210 100 60"
+              colors={['#818cf8', '#f472b6', '#22d3ee']}
               className="feature-card"
             >
               <div className="feature-icon">{f.icon}</div>
@@ -383,6 +386,12 @@ const Landing = () => {
       }
       .feature-card .border-glow-inner {
         padding: 28px;
+      }
+      .feature-card.border-glow-card::after {
+        mix-blend-mode: screen;
+      }
+      .feature-card.border-glow-card > .edge-light {
+        mix-blend-mode: screen;
       }
       .feature-icon {
         width: 44px;

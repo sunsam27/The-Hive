@@ -26,32 +26,36 @@ export async function list(req: Request, res: Response, next: NextFunction) {
     const sortBy = req.query.sortBy as string | undefined;
     const sortOrder = req.query.sortOrder as string | undefined;
 
-    let baseQuery = db('expenses')
-      .join('users', 'expenses.submitter_id', 'users.id')
-      .join('workspace_members', 'expenses.workspace_id', 'workspace_members.workspace_id')
-      .where('workspace_members.user_id', req.user!.id);
+    const userId = req.user!.id;
 
-    if (workspaceId) baseQuery = baseQuery.where('expenses.workspace_id', workspaceId);
-    if (status) baseQuery = baseQuery.where('expenses.status', status);
-    if (category) baseQuery = baseQuery.where('expenses.category', category);
-    if (dateFrom) baseQuery = baseQuery.where('expenses.expense_date', '>=', dateFrom);
-    if (dateTo) baseQuery = baseQuery.where('expenses.expense_date', '<=', dateTo);
+    function applyFilters(query: any) {
+      let q = query
+        .join('users', 'expenses.submitter_id', 'users.id')
+        .join('workspace_members', 'expenses.workspace_id', 'workspace_members.workspace_id')
+        .where('workspace_members.user_id', userId);
+      if (workspaceId) q = q.where('expenses.workspace_id', workspaceId);
+      if (status) q = q.where('expenses.status', status);
+      if (category) q = q.where('expenses.category', category);
+      if (dateFrom) q = q.where('expenses.expense_date', '>=', dateFrom);
+      if (dateTo) q = q.where('expenses.expense_date', '<=', dateTo);
+      return q;
+    }
 
     const allowedSorts = ['created_at', 'expense_date', 'amount', 'merchant'];
     const sb = sortBy || '';
     const column = allowedSorts.includes(sb) ? `expenses.${sb}` : 'expenses.created_at';
     const dir = sortOrder === 'asc' ? 'asc' : 'desc';
 
-    const { count } = (await baseQuery.clone().countDistinct('expenses.id as count').first()) || { count: 0 };
+    const countResult = await applyFilters(db('expenses')).countDistinct('expenses.id as count').first();
+    const total = Number(countResult?.count ?? 0);
 
-    const expenses = await baseQuery
-      .clone()
+    const expenses = await applyFilters(db('expenses'))
       .select('expenses.*', 'users.name as submitter_name')
       .orderBy(column, dir)
       .limit(limit)
       .offset(offset);
 
-    res.json({ data: expenses, total: Number(count), page, limit });
+    res.json({ data: expenses, total, page, limit });
   } catch (err) {
     next(err);
   }
