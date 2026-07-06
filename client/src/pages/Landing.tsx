@@ -383,6 +383,7 @@ const Landing = () => {
       }
       .feature-card {
         border: 1px solid var(--color-outline-variant);
+        box-shadow: none;
       }
       .feature-card .border-glow-inner {
         padding: 28px;
