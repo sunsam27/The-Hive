@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import { Receipt, Users, BarChart3, Shield, ArrowRight, Sparkles, ChevronLeft, ChevronRight } from 'lucide-react';
+import Lightfall from '../components/effects/Lightfall';
 
 const features = [
   { icon: <Receipt size={28} />, title: 'Smart Receipt Scanning', desc: 'Upload receipts and let AI extract amounts, merchants, and dates automatically.' },
@@ -43,27 +44,48 @@ const Landing = () => {
       </div>
     </header>
 
-    <section className="hero">
-      <div className="hero-badge">
-        <Sparkles size={14} />
-        <span>Expense tracking, reimagined</span>
+    <section className="hero-section">
+      <div className="hero-bg">
+        <Lightfall
+          colors={['#5227FF', '#A6C8FF', '#FF9FFC']}
+          backgroundColor="#0A29FF"
+          speed={0.4}
+          streakCount={4}
+          streakWidth={0.8}
+          streakLength={0.7}
+          glow={0.8}
+          density={0.4}
+          twinkle={0.6}
+          zoom={2.5}
+          backgroundGlow={0.3}
+          opacity={0.6}
+          mouseInteraction={false}
+          paused={false}
+        />
       </div>
-      <h1 className="hero-title">
-        Track expenses with<br />
-        <span className="hero-highlight">your clients,</span> not spreadsheets
-      </h1>
-      <p className="hero-subtitle">
-        The Hive is a shared expense workspace for freelancers and businesses.
-        Upload receipts, collaborate with clients, and get clear summaries — all in one place.
-      </p>
-      <div className="hero-actions">
-        <Link to="/signup" className="hero-btn-primary">
-          Start free
-          <ArrowRight size={18} />
-        </Link>
-        <Link to="/login" className="hero-btn-secondary">
-          Sign in
-        </Link>
+      <div className="hero-overlay" />
+      <div className="hero">
+        <div className="hero-badge">
+          <Sparkles size={14} />
+          <span>Expense tracking, reimagined</span>
+        </div>
+        <h1 className="hero-title">
+          Track expenses with<br />
+          <span className="hero-highlight">your clients,</span> not spreadsheets
+        </h1>
+        <p className="hero-subtitle">
+          The Hive is a shared expense workspace for freelancers and businesses.
+          Upload receipts, collaborate with clients, and get clear summaries — all in one place.
+        </p>
+        <div className="hero-actions">
+          <Link to="/signup" className="hero-btn-primary">
+            Start free
+            <ArrowRight size={18} />
+          </Link>
+          <Link to="/login" className="hero-btn-secondary">
+            Sign in
+          </Link>
+        </div>
       </div>
     </section>
 
@@ -217,7 +239,31 @@ const Landing = () => {
         opacity: 0.85;
       }
 
+      .hero-section {
+        position: relative;
+        overflow: hidden;
+      }
+      .hero-bg {
+        position: absolute;
+        inset: 0;
+        width: 100%;
+        height: 100%;
+        z-index: 0;
+      }
+      .hero-overlay {
+        position: absolute;
+        inset: 0;
+        z-index: 1;
+        background: linear-gradient(
+          180deg,
+          rgba(255,255,255,0) 0%,
+          rgba(255,255,255,0.92) 100%
+        );
+        pointer-events: none;
+      }
       .hero {
+        position: relative;
+        z-index: 2;
         max-width: 800px;
         margin: 0 auto;
         padding: 140px 24px 60px;
