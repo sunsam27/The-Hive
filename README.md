@@ -25,7 +25,7 @@ A lightweight web application for freelancers and clients to manage expense reim
 - **Node.js** ≥ 18.x
 - **npm** ≥ 9.x
 - **PostgreSQL** ≥ 15.x (local or hosted — e.g., [Supabase](https://supabase.com), [Neon](https://neon.tech))
-- **Resend account** — [Sign up free](https://resend.com) (email notifications)
+- **Brevo account** — [Sign up free](https://brevo.com) (email notifications)
 - **OCR.space API key** — [Get a free key](https://ocr.space/ocrapi)
 - **Git**
 
@@ -66,7 +66,7 @@ Edit `.env` with your values. See [ENV_SETUP.md](docs/ENV_SETUP.md) for a full r
 ```env
 DATABASE_URL=postgresql://user:password@localhost:5432/the_hive
 JWT_SECRET=your-secure-random-string-min-64-chars
-RESEND_API_KEY=re_xxxxxxxxxxxx
+BREVO_API_KEY=xkeysib-xxxxxxxxxxxx
 OCR_SPACE_API_KEY=xxxxxxxxxxxxxxxxxxxxxxxxx
 ```
 
