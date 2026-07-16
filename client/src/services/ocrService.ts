@@ -5,6 +5,7 @@ export async function processReceipt(file) {
   formData.append('receipt', file);
   const { data } = await api.post('/ocr/receipt', formData, {
     headers: { 'Content-Type': 'multipart/form-data' },
+    timeout: 55000,
   });
   return data;
 }
