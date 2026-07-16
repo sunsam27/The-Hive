@@ -2,7 +2,7 @@ import { Request, Response, NextFunction } from 'express';
 import db from '../db/index.js';
 import { checkWorkspaceAccess } from '../utils/accessControl.js';
 import { logAudit } from '../utils/auditLog.js';
-import { initiatePayment, verifyTransaction, generateTxRef } from '../services/flutterwave.service.js';
+import { initiatePayment, verifyTransaction, generateTxRef, getFlwSecretHash } from '../services/flutterwave.service.js';
 
 const FRONTEND_URL = process.env.FRONTEND_URL || process.env.CLIENT_URL || 'http://localhost:5173';
 
@@ -10,18 +10,15 @@ export async function initiate(req: Request, res: Response, next: NextFunction) 
   try {
     const { expenseId } = req.body as { expenseId: string };
 
+    if (!process.env.FLW_PUBLIC_KEY || !process.env.FLW_SECRET_KEY) {
+      return res.status(503).json({ error: 'Payment service is not configured' });
+    }
+
     const expense = await db('expenses').where({ id: expenseId }).first();
     if (!expense) return res.status(404).json({ error: 'Expense not found' });
 
     const hasAccess = await checkWorkspaceAccess(expense.workspace_id, req.user!.id);
     if (!hasAccess) return res.status(403).json({ error: 'Access denied' });
-
-    const member = await db('workspace_members')
-      .where({ workspace_id: expense.workspace_id, user_id: req.user!.id })
-      .first();
-    if (!member || member.role !== 'client') {
-      return res.status(403).json({ error: 'Only clients can initiate payments' });
-    }
 
     if (expense.status !== 'approved') {
       return res.status(400).json({ error: 'Only approved expenses can be paid' });
@@ -102,9 +99,6 @@ export async function handleWebhook(req: Request, res: Response, next: NextFunct
       if (payment.status === 'completed') {
         return res.json({ message: 'Already processed' });
       }
-
-      const expense = await db('expenses').where({ id: payment.expense_id }).first();
-      if (!expense) return res.status(404).json({ error: 'Expense not found' });
 
       await db.transaction(async (trx: any) => {
         await trx('payments')
