@@ -30,7 +30,11 @@ export async function signup(req: Request, res: Response, next: NextFunction) {
       verified: false,
     });
 
-    await sendVerificationEmail(email, name, verificationToken);
+    try {
+      await sendVerificationEmail(email, name, verificationToken);
+    } catch (emailErr) {
+      console.error('Failed to send verification email:', emailErr);
+    }
 
     res.status(201).json({
       message: 'Account created. Check your email to verify your account.',
@@ -109,7 +113,11 @@ export async function forgotPassword(req: Request, res: Response, next: NextFunc
       .where({ id: user.id })
       .update({ reset_token: hashedToken, reset_token_expires: expires });
 
-    await sendResetEmail(email, user.name, resetToken);
+    try {
+      await sendResetEmail(email, user.name, resetToken);
+    } catch (emailErr) {
+      console.error('Failed to send reset email:', emailErr);
+    }
 
     res.json({ message: 'If the email exists, a reset link has been sent.' });
   } catch (err) {
