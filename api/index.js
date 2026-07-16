@@ -1,5 +1,4 @@
 let app;
-let ready = false;
 
 async function ensureTables(db) {
   const hasInvoices = await db.schema.hasTable('invoices');
@@ -25,7 +24,6 @@ async function ensureTables(db) {
       table.string('status', 20).notNullable().defaultTo('draft');
       table.timestamps(true, true);
     });
-    console.log('Created invoices table');
   }
 
   const hasPayments = await db.schema.hasTable('payments');
@@ -43,7 +41,6 @@ async function ensureTables(db) {
       table.timestamp('paid_at');
       table.timestamps(true, true);
     });
-    console.log('Created payments table');
   }
 
   const hasExpensesInvoiceId = await db.schema.hasColumn('expenses', 'invoice_id');
@@ -51,7 +48,6 @@ async function ensureTables(db) {
     await db.schema.alterTable('expenses', (table) => {
       table.uuid('invoice_id').references('id').inTable('invoices').onDelete('SET NULL');
     });
-    console.log('Added invoice_id to expenses');
   }
 
   const hasAuditLog = await db.schema.hasTable('audit_log');
@@ -59,30 +55,25 @@ async function ensureTables(db) {
     await db.schema.createTable('audit_log', (table) => {
       table.uuid('id').primary().defaultTo(db.raw('gen_random_uuid()'));
       table.uuid('user_id').references('id').inTable('users').onDelete('SET NULL');
-      table.string('action', 100).notNullable();
-      table.string('resource_type', 50).notNullable();
+      table.string('action').notNullable();
+      table.string('resource_type').notNullable();
       table.uuid('resource_id');
       table.jsonb('details');
       table.timestamp('created_at').defaultTo(db.fn.now());
+      table.index(['resource_type', 'resource_id']);
+      table.index('created_at');
     });
-    console.log('Created audit_log table');
   }
 }
 
 module.exports = async (req, res) => {
   if (!app) {
-    const mod = await import('../server/dist/app.js');
-    app = mod.default;
-
     const dbMod = await import('../server/dist/db/index.js');
     const db = dbMod.default;
-    try {
-      await ensureTables(db);
-      console.log('All tables verified');
-    } catch (err) {
-      console.error('Table check/creation failed:', err.message);
-    }
-    ready = true;
+    await ensureTables(db);
+
+    const mod = await import('../server/dist/app.js');
+    app = mod.default;
   }
   return app(req, res);
 };
