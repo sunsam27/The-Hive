@@ -1,8 +1,9 @@
 let app;
 
 async function ensureTables(db) {
-  // ── users ──
-  if (!(await db.schema.hasTable('users'))) {
+  const has = async (t) => (await db.schema.hasTable(t));
+
+  if (!(await has('users'))) {
     await db.schema.createTable('users', (t) => {
       t.uuid('id').primary().defaultTo(db.raw('gen_random_uuid()'));
       t.string('name').notNullable();
@@ -16,18 +17,9 @@ async function ensureTables(db) {
       t.text('avatar_url');
       t.timestamps(true, true);
     });
-  } else {
-    const uCols = await db.schema.columnInfo('users');
-    const addU = async (n, b) => { if (!uCols[n]) await db.schema.alterTable('users', b); };
-    await addU('verified', (t) => { t.boolean('verified').defaultTo(false); });
-    await addU('verification_token', (t) => { t.string('verification_token'); });
-    await addU('reset_token', (t) => { t.string('reset_token'); });
-    await addU('reset_token_expires', (t) => { t.timestamp('reset_token_expires'); });
-    await addU('avatar_url', (t) => { t.text('avatar_url'); });
   }
 
-  // ── workspaces ──
-  if (!(await db.schema.hasTable('workspaces'))) {
+  if (!(await has('workspaces'))) {
     await db.schema.createTable('workspaces', (t) => {
       t.uuid('id').primary().defaultTo(db.raw('gen_random_uuid()'));
       t.string('name').notNullable();
@@ -37,8 +29,7 @@ async function ensureTables(db) {
     });
   }
 
-  // ── workspace_members ──
-  if (!(await db.schema.hasTable('workspace_members'))) {
+  if (!(await has('workspace_members'))) {
     await db.schema.createTable('workspace_members', (t) => {
       t.uuid('id').primary().defaultTo(db.raw('gen_random_uuid()'));
       t.uuid('workspace_id').references('id').inTable('workspaces').onDelete('CASCADE');
@@ -49,8 +40,7 @@ async function ensureTables(db) {
     });
   }
 
-  // ── invoices (before expenses, since expenses.invoice_id references invoices) ──
-  if (!(await db.schema.hasTable('invoices'))) {
+  if (!(await has('invoices'))) {
     await db.schema.createTable('invoices', (t) => {
       t.uuid('id').primary().defaultTo(db.raw('gen_random_uuid()'));
       t.uuid('workspace_id').notNullable().references('id').inTable('workspaces').onDelete('CASCADE');
@@ -74,8 +64,7 @@ async function ensureTables(db) {
     });
   }
 
-  // ── expenses ──
-  if (!(await db.schema.hasTable('expenses'))) {
+  if (!(await has('expenses'))) {
     await db.schema.createTable('expenses', (t) => {
       t.uuid('id').primary().defaultTo(db.raw('gen_random_uuid()'));
       t.uuid('workspace_id').references('id').inTable('workspaces').onDelete('CASCADE');
@@ -99,24 +88,9 @@ async function ensureTables(db) {
       t.uuid('invoice_id').references('id').inTable('invoices').onDelete('SET NULL');
       t.timestamps(true, true);
     });
-  } else {
-    const eCols = await db.schema.columnInfo('expenses');
-    const addE = async (n, b) => { if (!eCols[n]) await db.schema.alterTable('expenses', b); };
-    await addE('currency', (t) => { t.string('currency', 3).defaultTo('USD'); });
-    await addE('submitted_at', (t) => { t.timestamp('submitted_at'); });
-    await addE('rejection_note', (t) => { t.text('rejection_note'); });
-    await addE('notes', (t) => { t.text('notes'); });
-    await addE('paid_proof_url', (t) => { t.text('paid_proof_url'); });
-    await addE('paid_note', (t) => { t.text('paid_note'); });
-    if (!eCols.invoice_id && (await db.schema.hasTable('invoices'))) {
-      await db.schema.alterTable('expenses', (t) => {
-        t.uuid('invoice_id').references('id').inTable('invoices').onDelete('SET NULL');
-      });
-    }
   }
 
-  // ── receipts ──
-  if (!(await db.schema.hasTable('receipts'))) {
+  if (!(await has('receipts'))) {
     await db.schema.createTable('receipts', (t) => {
       t.uuid('id').primary().defaultTo(db.raw('gen_random_uuid()'));
       t.uuid('expense_id').references('id').inTable('expenses').onDelete('CASCADE');
@@ -126,8 +100,7 @@ async function ensureTables(db) {
     });
   }
 
-  // ── expense_tags ──
-  if (!(await db.schema.hasTable('expense_tags'))) {
+  if (!(await has('expense_tags'))) {
     await db.schema.createTable('expense_tags', (t) => {
       t.uuid('id').primary().defaultTo(db.raw('gen_random_uuid()'));
       t.uuid('expense_id').references('id').inTable('expenses').onDelete('CASCADE');
@@ -136,8 +109,7 @@ async function ensureTables(db) {
     });
   }
 
-  // ── payments ──
-  if (!(await db.schema.hasTable('payments'))) {
+  if (!(await has('payments'))) {
     await db.schema.createTable('payments', (t) => {
       t.uuid('id').primary().defaultTo(db.raw('gen_random_uuid()'));
       t.uuid('expense_id').notNullable().references('id').inTable('expenses').onDelete('CASCADE');
@@ -153,8 +125,7 @@ async function ensureTables(db) {
     });
   }
 
-  // ── audit_log ──
-  if (!(await db.schema.hasTable('audit_log'))) {
+  if (!(await has('audit_log'))) {
     await db.schema.createTable('audit_log', (t) => {
       t.uuid('id').primary().defaultTo(db.raw('gen_random_uuid()'));
       t.uuid('user_id').references('id').inTable('users').onDelete('SET NULL');
