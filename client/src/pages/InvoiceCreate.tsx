@@ -158,7 +158,7 @@ export default function InvoiceCreate() {
                   <div className="currency-select-inner" style={{ position: 'relative' }}>
                     <select className="currency-select" value={form.currency} onChange={(e) => update('currency', e.target.value)}
                       style={{ appearance: 'none', width: '100%', padding: '10px 14px', borderRadius: 10, border: '1.5px solid var(--color-outline-variant)', background: 'var(--color-surface)', color: 'var(--color-on-surface)', fontSize: 14, cursor: 'pointer' }}>
-                      {CURRENCIES.map((c) => <option key={c.code} value={c.code}>{c.code} — {c.symbol}</option>)}
+                      {CURRENCIES.map((c) => <option key={c.code} value={c.code}>{c.flag} {c.code} — {c.symbol}</option>)}
                     </select>
                     <ChevronDown size={16} style={{ position: 'absolute', right: 12, top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none', color: 'var(--color-on-surface-variant)' }} />
                   </div>
@@ -268,7 +268,7 @@ export default function InvoiceCreate() {
                 </p>
                 <div className="invoice-preview-total">
                   <span>Total</span>
-                  <span style={{ fontSize: 18, fontWeight: 700 }}>{form.currency} {total.toFixed(2)}</span>
+                  <span style={{ fontSize: 18, fontWeight: 700 }}>{CURRENCIES.find((c) => c.code === form.currency)?.flag} {form.currency} {total.toFixed(2)}</span>
                 </div>
               </div>
             )}

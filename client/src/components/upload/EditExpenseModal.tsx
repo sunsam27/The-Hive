@@ -58,7 +58,7 @@ const EditExpenseModal = ({ isOpen, onClose, expense, onSaved }) => {
             <div className="currency-select-inner">
               <select className="currency-select" value={currency} onChange={(e) => setCurrency(e.target.value)}>
                 {CURRENCIES.map((c) => (
-                  <option key={c.code} value={c.code}>{c.code} — {c.symbol}</option>
+                   <option key={c.code} value={c.code}>{c.flag} {c.code} — {c.symbol}</option>
                 ))}
               </select>
               <ChevronDown size={16} className="currency-select-chevron" />

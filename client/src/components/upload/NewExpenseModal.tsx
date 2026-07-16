@@ -168,7 +168,7 @@ const NewExpenseModal = ({ isOpen, onClose, workspaceId }) => {
                   onChange={(e) => setCurrency(e.target.value)}
                 >
                   {CURRENCIES.map((c) => (
-                    <option key={c.code} value={c.code}>{c.code} — {c.symbol}</option>
+                    <option key={c.code} value={c.code}>{c.flag} {c.code} — {c.symbol}</option>
                   ))}
                 </select>
                 <ChevronDown size={16} className="currency-select-chevron" />
