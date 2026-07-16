@@ -1,12 +1,12 @@
-import Flutterwave from 'flutterwave-node-v3';
+const FLW_API = 'https://api.flutterwave.com/v3';
 
-function getFlw(): Flutterwave {
+function getKeys() {
   const publicKey = process.env.FLW_PUBLIC_KEY;
   const secretKey = process.env.FLW_SECRET_KEY;
   if (!publicKey || !secretKey) {
     throw new Error('Flutterwave not configured: FLW_PUBLIC_KEY and FLW_SECRET_KEY must be set');
   }
-  return new Flutterwave(publicKey, secretKey);
+  return { publicKey, secretKey };
 }
 
 export interface InitiatePaymentParams {
@@ -19,26 +19,41 @@ export interface InitiatePaymentParams {
 }
 
 export async function initiatePayment(params: InitiatePaymentParams) {
-  const flw = getFlw();
-  const payload = {
-    tx_ref: params.txRef,
-    amount: params.amount,
-    currency: params.currency || 'USD',
-    redirect_url: params.redirectUrl,
-    customer: {
-      email: params.customerEmail,
-      name: params.customerName,
-    },
-  };
+  const { secretKey } = getKeys();
 
-  const response = await flw.Charge.card(payload);
-  return response;
+  const res = await fetch(`${FLW_API}/payments`, {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${secretKey}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      tx_ref: params.txRef,
+      amount: params.amount,
+      currency: params.currency || 'USD',
+      redirect_url: params.redirectUrl,
+      customer: {
+        email: params.customerEmail,
+        name: params.customerName,
+      },
+    }),
+  });
+
+  const json = await res.json();
+  if (json.status !== 'success') {
+    throw new Error(json.message || 'Payment initialization failed');
+  }
+  return json;
 }
 
 export async function verifyTransaction(transactionId: string) {
-  const flw = getFlw();
-  const response = await flw.Transaction.verify({ id: transactionId });
-  return response;
+  const { secretKey } = getKeys();
+
+  const res = await fetch(`${FLW_API}/transactions/${transactionId}/verify`, {
+    headers: { Authorization: `Bearer ${secretKey}` },
+  });
+
+  return res.json();
 }
 
 export function getFlwSecretHash(): string {
