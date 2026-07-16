@@ -16,7 +16,10 @@ const OCR_SPACE_API = 'https://api.ocr.space/parse/image';
 
 export async function extractReceiptData(imageBuffer: ArrayBuffer): Promise<ReceiptData> {
   const apiKey = process.env.OCR_SPACE_API_KEY;
-  if (!apiKey) throw new Error('OCR_SPACE_API_KEY is not configured');
+  if (!apiKey) throw new Error('OCR service is not configured');
+
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 25000);
 
   try {
     const body = new FormData();
@@ -26,7 +29,7 @@ export async function extractReceiptData(imageBuffer: ArrayBuffer): Promise<Rece
     body.append('OCREngine', '2');
     body.append('isOverlayRequired', 'false');
 
-    const res = await fetch(OCR_SPACE_API, { method: 'POST', body });
+    const res = await fetch(OCR_SPACE_API, { method: 'POST', body, signal: controller.signal });
     const json: OcrSpaceResponse = await res.json();
 
     if (json.IsErroredOnProcessing) {
@@ -40,8 +43,11 @@ export async function extractReceiptData(imageBuffer: ArrayBuffer): Promise<Rece
     const date = extractDate(text);
 
     return { text, amount, currency, merchant, date };
-  } catch (err) {
+  } catch (err: any) {
+    if (err.name === 'AbortError') throw new Error('Receipt processing timed out — try a smaller image');
     throw err;
+  } finally {
+    clearTimeout(timeout);
   }
 }
 
