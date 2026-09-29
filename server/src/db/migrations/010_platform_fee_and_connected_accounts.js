@@ -1,30 +1,25 @@
 export function up(knex) {
-  return knex.schema
-    .alterTable('payments', (table) => {
-      table.decimal('gross_amount', 14, 2);
-      table.decimal('platform_fee', 14, 2);
-    })
+  return knex
+    .raw('ALTER TABLE payments ADD COLUMN IF NOT EXISTS gross_amount decimal(14, 2)')
+    .then(() => knex.raw('ALTER TABLE payments ADD COLUMN IF NOT EXISTS platform_fee decimal(14, 2)'))
     .then(() =>
-      knex.raw('UPDATE payments SET gross_amount = amount, platform_fee = 0 WHERE gross_amount IS NULL')
+      knex.raw(
+        'UPDATE payments SET gross_amount = amount WHERE gross_amount IS NULL'
+      )
+    )
+    .then(() =>
+      knex.raw('UPDATE payments SET platform_fee = 0 WHERE platform_fee IS NULL')
     )
     .then(() => knex.raw('ALTER TABLE payments ALTER COLUMN gross_amount SET NOT NULL'))
     .then(() => knex.raw('ALTER TABLE payments ALTER COLUMN platform_fee SET NOT NULL'))
     .then(() =>
-      knex.schema.alterTable('users', (table) => {
-        table.string('provider_account_id', 255);
-      })
+      knex.raw('ALTER TABLE users ADD COLUMN IF NOT EXISTS provider_account_id varchar(255)')
     );
 }
 
 export function down(knex) {
-  return knex.schema
-    .alterTable('users', (table) => {
-      table.dropColumn('provider_account_id');
-    })
-    .then(() =>
-      knex.schema.alterTable('payments', (table) => {
-        table.dropColumn('gross_amount');
-        table.dropColumn('platform_fee');
-      })
-    );
+  return knex
+    .raw('ALTER TABLE users DROP COLUMN IF EXISTS provider_account_id')
+    .then(() => knex.raw('ALTER TABLE payments DROP COLUMN IF EXISTS gross_amount'))
+    .then(() => knex.raw('ALTER TABLE payments DROP COLUMN IF EXISTS platform_fee'));
 }

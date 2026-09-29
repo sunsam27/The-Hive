@@ -1,32 +1,35 @@
 export function up(knex) {
-  return knex.raw('ALTER TABLE payments ADD COLUMN IF NOT EXISTS provider_session_id varchar(255)')
+  return knex
+    .raw('ALTER TABLE payments ADD COLUMN IF NOT EXISTS provider_session_id varchar(255)')
     .then(() =>
-      knex.schema.createTable('payment_accounts', (table) => {
-        table.uuid('id').primary().defaultTo(knex.raw('gen_random_uuid()'));
-        table
-          .uuid('user_id')
-          .notNullable()
-          .references('id')
-          .inTable('users')
-          .onDelete('CASCADE');
-        table.string('provider', 32).notNullable();
-        table.string('provider_account_id', 255).notNullable();
-        table.string('status', 32).notNullable().defaultTo('pending');
-        table.boolean('details_submitted').notNullable().defaultTo(false);
-        table.boolean('charges_enabled').notNullable().defaultTo(false);
-        table.boolean('payouts_enabled').notNullable().defaultTo(false);
-        table.string('business_name', 255);
-        table.string('display_label', 255);
-        table.jsonb('meta');
-        table.timestamps(true, true);
-        table.unique(['user_id', 'provider']);
-      })
+      knex.raw(`
+        CREATE TABLE IF NOT EXISTS payment_accounts (
+          id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+          user_id uuid NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+          provider varchar(32) NOT NULL,
+          provider_account_id varchar(255) NOT NULL,
+          status varchar(32) NOT NULL DEFAULT 'pending',
+          details_submitted boolean NOT NULL DEFAULT false,
+          charges_enabled boolean NOT NULL DEFAULT false,
+          payouts_enabled boolean NOT NULL DEFAULT false,
+          business_name varchar(255),
+          display_label varchar(255),
+          meta jsonb,
+          created_at timestamptz NOT NULL DEFAULT now(),
+          updated_at timestamptz NOT NULL DEFAULT now(),
+          CONSTRAINT payment_accounts_user_id_provider_unique UNIQUE (user_id, provider)
+        )
+      `)
     )
     .then(() =>
-      knex.schema.alterTable('payment_accounts', (table) => {
-        table.index(['provider', 'provider_account_id']);
-        table.index(['provider', 'payouts_enabled']);
-      })
+      knex.raw(
+        'CREATE INDEX IF NOT EXISTS payment_accounts_provider_account_id_index ON payment_accounts (provider, provider_account_id)'
+      )
+    )
+    .then(() =>
+      knex.raw(
+        'CREATE INDEX IF NOT EXISTS payment_accounts_provider_payouts_index ON payment_accounts (provider, payouts_enabled)'
+      )
     )
     .then(() =>
       knex.raw(`
@@ -39,7 +42,7 @@ export function up(knex) {
           id,
           CASE
             WHEN left(provider_account_id, 5) = 'acct_' THEN 'stripe'
-            WHEN left(provider_account_id, 3) = 'RS_' THEN 'flutterwave'
+            ELSE 'flutterwave'
           END,
           provider_account_id,
           'pending',
@@ -61,7 +64,7 @@ export function up(knex) {
 }
 
 export function down(knex) {
-  return knex.schema
-    .dropTableIfExists('payment_accounts')
+  return knex
+    .raw('DROP TABLE IF EXISTS payment_accounts')
     .then(() => knex.raw('ALTER TABLE payments DROP COLUMN IF EXISTS provider_session_id'));
 }
