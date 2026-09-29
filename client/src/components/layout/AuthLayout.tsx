@@ -7,7 +7,7 @@ const AuthLayout = ({ children, title, subtitle }) => {
       <Link to="/" className="back-to-home">← Back to home</Link>
       <div className="auth-card">
         <div className="auth-header">
-          <img src="/logo.svg" alt="The Hive" className="app-logo" />
+          <img src="/finsyte-logo.png" alt="Finsyte" className="app-logo" />
           <h1 className="auth-title">{title}</h1>
           {subtitle && <p className="auth-subtitle">{subtitle}</p>}
         </div>

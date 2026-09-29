@@ -26,7 +26,7 @@ const Login = () => {
 
   return (
     <AuthLayout 
-      title="Welcome to The Hive" 
+      title="Welcome to Finsyte" 
       subtitle="Manage your expenses with confidence"
     >
       <form onSubmit={handleSubmit(onSubmit)}>

@@ -67,8 +67,7 @@ const Sidebar = () => {
   const sidebarContent = (
     <>
       <div className="sidebar-brand">
-        <img src="/logo.svg" alt="The Hive" className="sidebar-logo-img" />
-        <span className="brand-name">The Hive</span>
+        <img src="/finsyte-logo.png" alt="Finsyte" className="sidebar-logo-img" />
       </div>
 
       <nav className="sidebar-nav" aria-label="Main navigation">
@@ -162,13 +161,6 @@ const Sidebar = () => {
         .sidebar-logo-img {
           height: 28px;
           width: auto;
-        }
-        .brand-name {
-          font-family: 'Space Grotesk', sans-serif;
-          font-size: 18px;
-          font-weight: 700;
-          color: var(--color-on-surface);
-          letter-spacing: -0.3px;
         }
         .sidebar-nav {
           flex: 1;

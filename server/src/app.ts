@@ -27,12 +27,31 @@ app.use(helmet({
     },
   },
 }));
-const allowedOrigins = [clientUrl];
+const extraOrigins = (process.env.ALLOWED_ORIGINS || '')
+  .split(',')
+  .map((origin) => origin.trim())
+  .filter(Boolean);
+const allowedOrigins = [clientUrl, ...extraOrigins];
 if (process.env.VERCEL_URL) allowedOrigins.push(`https://${process.env.VERCEL_URL}`);
+
+// Preview deployments get a random subdomain per branch, so they cannot be
+// listed one by one. Only exact project-name prefixes on vercel.app are
+// accepted, and the list is configurable so renaming the Vercel project does
+// not silently lock out your own preview deployments.
+const vercelProjectPrefixes = (process.env.VERCEL_PROJECT_PREFIXES || 'the-hive,finsyte')
+  .split(',')
+  .map((prefix) => prefix.trim().toLowerCase())
+  .filter(Boolean);
+
 app.use(cors({
   origin: (origin, cb) => {
     if (!origin || allowedOrigins.includes(origin)) return cb(null, true);
-    if (origin && (origin.startsWith('https://the-hive-') && origin.endsWith('.vercel.app'))) return cb(null, true);
+    if (origin.startsWith('https://') && origin.endsWith('.vercel.app')) {
+      const project = origin.slice('https://'.length, -'.vercel.app'.length).toLowerCase();
+      if (vercelProjectPrefixes.some((prefix) => project === prefix || project.startsWith(`${prefix}-`))) {
+        return cb(null, true);
+      }
+    }
     cb(new Error(`CORS: origin '${origin}' not allowed`));
   },
 }));

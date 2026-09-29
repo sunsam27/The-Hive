@@ -1,4 +1,4 @@
-# Database Schema — The Hive
+# Database Schema — Finsyte
 
 This document is the single source of truth for the database schema, relationships, indexes, validation rules, and migration strategy.
 

@@ -1,6 +1,6 @@
-# Deployment Guide — The Hive
+# Deployment Guide — Finsyte
 
-This document covers deploying The Hive to **Vercel** with a hosted PostgreSQL database and Cloudinary for file storage.
+This document covers deploying Finsyte to **Vercel** with a hosted PostgreSQL database and Cloudinary for file storage.
 
 ---
 
@@ -273,7 +273,7 @@ curl https://your-app.vercel.app/api/v1/health
 ## Custom Domain (Optional)
 
 1. Go to Vercel project → **Settings → Domains**
-2. Add your custom domain (e.g., `app.thehive.io`)
+2. Add your custom domain (e.g., `app.finsyte.app`)
 3. Update DNS records as instructed by Vercel
 4. Vercel automatically provisions SSL certificates
 5. Update `FRONTEND_URL` environment variable to the new domain

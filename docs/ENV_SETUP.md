@@ -1,12 +1,12 @@
-# Environment Setup — The Hive
+# Environment Setup — Finsyte
 
-This document provides a detailed breakdown of all environment variables used in The Hive, their purpose, and how to obtain them.
+This document provides a detailed breakdown of all environment variables used in Finsyte, their purpose, and how to obtain them.
 
 ---
 
 ## Overview
 
-The Hive uses environment variables to manage configuration across different environments (Development, Testing, Production). 
+Finsyte uses environment variables to manage configuration across different environments (Development, Testing, Production). 
 
 - **Backend (`/server`)**: Uses `.env` for local development and `.env.test` for running tests.
 - **Frontend (`/client`)**: Uses `.env` or `.env.local` for local development.

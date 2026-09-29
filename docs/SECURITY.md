@@ -1,6 +1,6 @@
-# Security Engineering Guide — The Hive
+# Security Engineering Guide — Finsyte
 
-This document defines the security architecture, threat model, and implementation requirements for The Hive. Every control listed here is a **hard requirement** — not a suggestion.
+This document defines the security architecture, threat model, and implementation requirements for Finsyte. Every control listed here is a **hard requirement** — not a suggestion.
 
 > **Principle:** Security is not a feature. It is a property of the system that must be designed in from the first line of code.
 
@@ -386,7 +386,7 @@ All cookies must use these flags:
 | `Max-Age` | `604800` (7 days) | Refresh token lifetime |
 
 ```javascript
-res.cookie('hive_refresh_token', refreshToken, {
+res.cookie('finsyte_refresh_token', refreshToken, {
   httpOnly: true,
   secure: true,      // process.env.NODE_ENV === 'production'
   sameSite: 'strict',
@@ -794,7 +794,7 @@ Even if not legally required for MVP, design for:
 
 ### 19.3 Responsible Disclosure
 
-If you discover a security vulnerability, report it to: `security@thehive.app` (replace with real email)
+If you discover a security vulnerability, report it to: `security@finsyte.app` (replace with real email)
 
 Do **not** open a public GitHub issue for security vulnerabilities.
 

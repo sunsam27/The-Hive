@@ -1,4 +1,4 @@
-# User Flows — The Hive
+# User Flows — Finsyte
 
 This document maps every critical user journey with flow diagrams, screen references, and API endpoint mappings.
 

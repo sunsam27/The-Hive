@@ -1,6 +1,6 @@
-# Testing Strategy — The Hive
+# Testing Strategy — Finsyte
 
-This document defines the testing strategy, tools, conventions, and critical test paths for The Hive.
+This document defines the testing strategy, tools, conventions, and critical test paths for Finsyte.
 
 ---
 

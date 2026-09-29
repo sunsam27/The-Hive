@@ -1,4 +1,4 @@
-# The Hive — Shared Expense Workspace
+# Finsyte — Shared Expense Workspace
 
 A lightweight web application for freelancers and clients to manage expense reimbursements. Freelancers upload receipts, the app extracts data via OCR, clients approve or reject expenses, and both parties can generate reimbursement summaries.
 
@@ -36,8 +36,8 @@ A lightweight web application for freelancers and clients to manage expense reim
 ### 1. Clone the Repository
 
 ```bash
-git clone https://github.com/your-org/the-hive.git
-cd the-hive
+git clone https://github.com/your-org/finsyte.git
+cd finsyte
 ```
 
 ### 2. Install Dependencies

@@ -1,6 +1,6 @@
-# Architecture — The Hive
+# Architecture — Finsyte
 
-This document describes the system architecture, design decisions, and integration patterns for The Hive.
+This document describes the system architecture, design decisions, and integration patterns for Finsyte.
 
 ---
 

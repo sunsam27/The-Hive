@@ -1,4 +1,4 @@
-# Contributing to The Hive
+# Contributing to Finsyte
 
 Thank you for contributing! This guide ensures consistency across the codebase.
 

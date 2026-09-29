@@ -35,8 +35,7 @@ const Landing = () => {
     <header className="landing-nav">
       <div className="nav-inner">
         <Link to="/" className="nav-logo">
-          <img src="/logo.svg" alt="The Hive" className="nav-logo-img" />
-          <span className="nav-brand-name">The Hive</span>
+          <img src="/finsyte-logo.png" alt="Finsyte" className="nav-logo-img" />
         </Link>
         <div className="nav-links">
           <Link to="/login" className="nav-link-text">Sign in</Link>
@@ -75,7 +74,7 @@ const Landing = () => {
           <span className="hero-highlight">your clients,</span> not spreadsheets
         </h1>
         <p className="hero-subtitle">
-          The Hive is a shared expense workspace for freelancers and businesses.
+          Finsyte is a shared expense workspace for freelancers and businesses.
           Upload receipts, collaborate with clients, and get clear summaries — all in one place.
         </p>
         <div className="hero-actions">
@@ -148,7 +147,7 @@ const Landing = () => {
     <section className="cta-section">
       <div className="cta-card">
         <h2 className="cta-title">Ready to simplify your expenses?</h2>
-        <p className="cta-subtitle">Join The Hive and take control of your shared finances.</p>
+        <p className="cta-subtitle">Join Finsyte and take control of your shared finances.</p>
         <Link to="/signup" className="cta-btn">
           Get started free
           <ArrowRight size={18} />
@@ -159,10 +158,9 @@ const Landing = () => {
     <footer className="landing-footer">
       <div className="footer-inner">
         <div className="footer-brand">
-          <img src="/logo.svg" alt="The Hive" className="footer-logo-img" />
-          <span className="nav-brand-name" style={{ fontSize: 15 }}>The Hive</span>
+          <img src="/finsyte-logo.png" alt="Finsyte" className="footer-logo-img" />
         </div>
-        <p className="footer-copy">&copy; {new Date().getFullYear()} The Hive. All rights reserved.</p>
+        <p className="footer-copy">&copy; {new Date().getFullYear()} Finsyte. All rights reserved.</p>
       </div>
     </footer>
 
@@ -212,13 +210,6 @@ const Landing = () => {
       .nav-logo-img {
         height: 32px;
         width: auto;
-      }
-      .nav-brand-name {
-        font-family: 'Space Grotesk', sans-serif;
-        font-size: 18px;
-        font-weight: 700;
-        color: var(--color-on-surface);
-        letter-spacing: -0.3px;
       }
       .nav-links {
         display: flex;

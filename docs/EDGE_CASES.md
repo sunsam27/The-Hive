@@ -1,4 +1,4 @@
-# Edge Cases — The Hive
+# Edge Cases — Finsyte
 
 This document catalogs every edge case that must be handled, specifying the expected behavior, which layer handles it, and the associated test case.
 

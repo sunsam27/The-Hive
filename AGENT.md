@@ -1,4 +1,4 @@
-# The Hive — Agent Context
+# Finsyte — Agent Context
 
 ## Project
 Shared Expense Workspace for freelancers/clients to manage expense reimbursements with OCR receipt scanning.

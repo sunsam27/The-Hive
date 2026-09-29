@@ -22,7 +22,7 @@ vi.mock('stripe', () => {
 const { stripeProvider, toMinorUnits } = await import('../services/payments/stripe.provider.js');
 
 const baseRequest = {
-  reference: 'HIVE-exp-1-1700000000-AB12CD',
+  reference: 'FINSYTE-exp-1-1700000000-AB12CD',
   grossAmount: 102,
   netAmount: 100,
   platformFee: 2,

@@ -1,6 +1,6 @@
-# API Reference — The Hive
+# API Reference — Finsyte
 
-Complete REST API documentation for The Hive Shared Expense Workspace.
+Complete REST API documentation for Finsyte Shared Expense Workspace.
 
 **Base URL:** `/api/v1`  
 **Content-Type:** `application/json` (unless uploading files)  
