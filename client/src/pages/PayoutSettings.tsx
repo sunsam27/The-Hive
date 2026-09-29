@@ -268,12 +268,14 @@ export default function PayoutSettings() {
                   </div>
 
                   <div>
-                    <label style={labelStyle} htmlFor="businessMobile">Business phone (optional)</label>
+                    <label style={labelStyle} htmlFor="businessMobile">Business phone</label>
                     <input
                       id="businessMobile"
                       style={inputStyle}
                       value={form.businessMobile}
                       onChange={(e) => setForm({ ...form, businessMobile: e.target.value })}
+                      placeholder="08000010100"
+                      required
                     />
                   </div>
 

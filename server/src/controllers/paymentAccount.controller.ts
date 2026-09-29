@@ -98,7 +98,7 @@ export async function addFlutterwaveSubaccount(req: Request, res: Response, next
       accountNumber: requiredString(payload.accountNumber, 'Account number'),
       businessName: requiredString(payload.businessName, 'Business name'),
       country: requiredString(payload.country, 'Country'),
-      businessMobile: typeof payload.businessMobile === 'string' ? payload.businessMobile : undefined,
+      businessMobile: requiredString(payload.businessMobile, 'Business phone'),
       meta: Array.isArray(payload.meta) ? (payload.meta as unknown[]) : undefined,
     });
 

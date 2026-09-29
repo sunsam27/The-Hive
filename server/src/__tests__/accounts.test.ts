@@ -247,6 +247,7 @@ describe('flutterwave subaccounts', () => {
         accountNumber: '0690000037',
         businessName: 'Ada',
         country: 'NG',
+        businessMobile: '08000010100',
       })
     ).rejects.toMatchObject({ status: 409 });
   });
@@ -270,6 +271,7 @@ describe('flutterwave subaccounts', () => {
         accountNumber: '0690000037',
         businessName: 'Ada',
         country: 'NG',
+        businessMobile: '08000010100',
       })
     ).rejects.toMatchObject({ status: 409 });
   });
@@ -281,8 +283,72 @@ describe('flutterwave subaccounts', () => {
         accountNumber: '   ',
         businessName: 'Ada',
         country: 'NG',
+        businessMobile: '08000010100',
       })
     ).rejects.toMatchObject({ status: 400 });
+  });
+
+  it('requires a business phone, which flutterwave treats as mandatory', async () => {
+    await expect(
+      svc.createFlutterwaveSubaccount('user-1', {
+        accountBank: '044',
+        accountNumber: '0690000037',
+        businessName: 'Ada',
+        country: 'NG',
+        businessMobile: '  ',
+      })
+    ).rejects.toMatchObject({ status: 400, message: 'Business phone is required' });
+  });
+
+  it('normalises country and trims the required fields before sending', async () => {
+    const fetchMock = vi.fn().mockResolvedValue({
+      json: async () => ({
+        status: 'success',
+        data: {
+          subaccount_id: 'RS_norm',
+          bank_name: 'ACCESS BANK NIGERIA',
+          account_bank: '044',
+          split_type: 'percentage',
+          split_value: 0.02,
+        },
+      }),
+    });
+    vi.stubGlobal('fetch', fetchMock);
+    queued.push(undefined);
+    queued.push([
+      {
+        id: 'pa-3',
+        user_id: 'user-1',
+        provider: 'flutterwave',
+        provider_account_id: 'RS_norm',
+        status: 'active',
+        details_submitted: true,
+        charges_enabled: true,
+        payouts_enabled: true,
+        business_name: 'Ada Ltd',
+        display_label: 'ACCESS BANK NIGERIA ending 0037',
+        meta: { account_last4: '0037' },
+        created_at: '2026-06-01T00:00:00.000Z',
+        updated_at: '2026-06-01T00:00:00.000Z',
+      },
+    ]);
+
+    await svc.createFlutterwaveSubaccount('user-1', {
+      accountBank: ' 044 ',
+      accountNumber: ' 0690000037 ',
+      businessName: ' Ada Ltd ',
+      country: 'ng',
+      businessMobile: ' 08000010100 ',
+    });
+
+    const sent = JSON.parse((fetchMock.mock.calls[0][1] as RequestInit).body as string);
+    expect(sent).toMatchObject({
+      account_bank: '044',
+      account_number: '0690000037',
+      business_name: 'Ada Ltd',
+      country: 'NG',
+      business_mobile: '08000010100',
+    });
   });
 });
 

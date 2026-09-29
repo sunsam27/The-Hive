@@ -1,14 +1,21 @@
 let app;
 let ready;
+let initStage = 'start';
 
 async function init() {
   if (!ready) {
     ready = (async () => {
+      initStage = 'import-db';
       const { default: db } = await import('../server/dist/db/index.js');
+
+      initStage = 'migrate';
       await db.migrate.latest();
 
+      initStage = 'import-app';
       const { default: expressApp } = await import('../server/dist/app.js');
       app = expressApp;
+
+      initStage = 'ready';
     })();
   }
   return ready;
@@ -31,8 +38,13 @@ module.exports = async (req, res) => {
   try {
     await init();
   } catch (err) {
-    console.error('[api] Failed to initialise server:', err);
-    res.status(503).json({ error: 'Service unavailable' });
+    console.error(`[api] Failed to initialise server (stage: ${initStage}):`, err);
+    // Drop the cached rejected promise so the next request retries instead of
+    // this warm function instance serving 503 for its whole lifetime.
+    ready = undefined;
+    // `stage` names which init step failed so the 503 is diagnosable without
+    // exposing error text. Full detail stays in the function logs.
+    res.status(503).json({ error: 'Service unavailable', stage: initStage });
     return;
   }
   restoreOriginalPath(req);

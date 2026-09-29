@@ -67,7 +67,7 @@ export interface FlutterwaveSubaccountInput {
   accountNumber: string;
   businessName: string;
   country: string;
-  businessMobile?: string;
+  businessMobile: string;
   splitType?: 'percentage' | 'flat';
   splitValue?: number;
   meta?: unknown[];
@@ -279,9 +279,28 @@ export async function createFlutterwaveSubaccount(
     );
   }
 
-  const accountNumber = String(input.accountNumber || '').trim();
-  if (!accountNumber) {
-    throw new PaymentAccountError('Account number is required', 400);
+  // Flutterwave requires all of these on POST /v3/subaccounts. Validate locally so
+  // a missing field is a clear 400 instead of an opaque 502 from the provider.
+  const fields = {
+    accountBank: String(input.accountBank || '').trim(),
+    accountNumber: String(input.accountNumber || '').trim(),
+    businessName: String(input.businessName || '').trim(),
+    country: String(input.country || '').trim().toUpperCase(),
+    businessMobile: String(input.businessMobile || '').trim(),
+  };
+
+  const labels: Record<keyof typeof fields, string> = {
+    accountBank: 'Bank code',
+    accountNumber: 'Account number',
+    businessName: 'Business name',
+    country: 'Country',
+    businessMobile: 'Business phone',
+  };
+
+  for (const key of Object.keys(fields) as Array<keyof typeof fields>) {
+    if (!fields[key]) {
+      throw new PaymentAccountError(`${labels[key]} is required`, 400);
+    }
   }
 
   const splitType = input.splitType ?? 'percentage';
@@ -294,11 +313,11 @@ export async function createFlutterwaveSubaccount(
       'Content-Type': 'application/json',
     },
     body: JSON.stringify({
-      account_bank: input.accountBank,
-      account_number: accountNumber,
-      business_name: input.businessName,
-      country: String(input.country || '').toUpperCase(),
-      business_mobile: input.businessMobile,
+      account_bank: fields.accountBank,
+      account_number: fields.accountNumber,
+      business_name: fields.businessName,
+      country: fields.country,
+      business_mobile: fields.businessMobile,
       split_type: splitType,
       split_value: splitValue,
       ...(input.meta ? { meta: input.meta } : {}),
@@ -318,7 +337,7 @@ export async function createFlutterwaveSubaccount(
     throw new PaymentAccountError(message, 502);
   }
 
-  const lastFour = accountNumber.slice(-4);
+  const lastFour = fields.accountNumber.slice(-4);
 
   const saved = await upsertAccount({
     userId,
@@ -328,11 +347,11 @@ export async function createFlutterwaveSubaccount(
     detailsSubmitted: true,
     chargesEnabled: true,
     payoutsEnabled: true,
-    businessName: input.businessName,
-    displayLabel: `${json.data.bank_name ?? input.accountBank} ending ${lastFour}`,
+    businessName: fields.businessName,
+    displayLabel: `${json.data.bank_name ?? fields.accountBank} ending ${lastFour}`,
     meta: {
       bank_name: json.data.bank_name ?? null,
-      account_bank: json.data.account_bank ?? input.accountBank,
+      account_bank: json.data.account_bank ?? fields.accountBank,
       account_last4: lastFour,
       split_type: json.data.split_type ?? splitType,
       split_value: json.data.split_value ?? splitValue,
