@@ -1,13 +1,15 @@
 let app;
 let ready;
+let db;
 let initStage = 'start';
 
 async function init() {
   if (!ready) {
     ready = (async () => {
       initStage = 'import-db';
-      const { default: db } = await import('../server/dist/db/index.js');
+      const imported = await import('../server/dist/db/index.js');
 
+      db = imported.default;
       initStage = 'migrate';
       await db.migrate.latest();
 
@@ -50,6 +52,8 @@ const INIT_ERROR_HINTS = {
   '28000': 'authentication method rejected - check the database role',
   '42501': 'permission denied for this role - check grants',
   '42P01': 'relation does not exist - migrations have not run',
+  '42P07': 'table already exists - a migration applied its DDL but was never recorded',
+  '42701': 'column already exists - a migration applied its DDL but was never recorded',
   '57P03': 'cannot connect now - database is paused or starting up',
   53300: 'too many connections - pool exhausted',
   '3F000': 'the schema named in the URL does not exist',
@@ -68,6 +72,43 @@ function initErrorCode(err) {
   return 'UNKNOWN';
 }
 
+// Knex prints `migration file "X.js" failed` to its logger, but the error it
+// actually throws is the raw driver error with an empty cause chain, so the
+// filename is never on it. Instead ask knex which files are still outstanding -
+// the first incomplete one is by definition the migration that is wedged.
+//
+// `migrate.list()` returns [completed, pending], where pending entries carry
+// `file` (plus an absolute `directory` we deliberately drop - it is a build path,
+// not something the caller needs). Only the filename is ever returned.
+async function failingMigration(db) {
+  try {
+    const list = await db.migrate.list();
+    const groups = Array.isArray(list) ? list : [list];
+
+    for (const group of groups) {
+      if (!Array.isArray(group)) continue;
+      for (const entry of group) {
+        if (entry && typeof entry.file === 'string' && /\.js$/i.test(entry.file)) {
+          return entry.file;
+        }
+      }
+    }
+
+    // Tolerate a shape that flags status inline instead of splitting the groups.
+    for (const group of groups) {
+      if (!Array.isArray(group)) continue;
+      for (const entry of group) {
+        if (entry && entry.completed === false && typeof entry.name === 'string') {
+          return entry.name;
+        }
+      }
+    }
+    return null;
+  } catch {
+    return null;
+  }
+}
+
 module.exports = async (req, res) => {
   try {
     await init();
@@ -76,13 +117,16 @@ module.exports = async (req, res) => {
     // Drop the cached rejected promise so the next request retries instead of
     // this warm function instance serving 503 for its whole lifetime.
     ready = undefined;
-    // `stage` and `code` are enough to diagnose this from a browser. Error text
-    // stays in the function logs so credentials never reach the response.
+    // `stage`, `code` and the pending migration name are enough to diagnose this
+    // from a browser. Error text stays in the function logs so credentials never
+    // reach the response.
     const code = initErrorCode(err);
+    const migration = initStage === 'migrate' ? await failingMigration(db) : null;
     res.status(503).json({
       error: 'Service unavailable',
       stage: initStage,
       code,
+      ...(migration ? { migration } : {}),
       ...(INIT_ERROR_HINTS[code] ? { hint: INIT_ERROR_HINTS[code] } : {}),
     });
     return;
@@ -92,3 +136,5 @@ module.exports = async (req, res) => {
 };
 
 module.exports.restoreOriginalPath = restoreOriginalPath;
+module.exports.failingMigration = failingMigration;
+module.exports.initErrorCode = initErrorCode;

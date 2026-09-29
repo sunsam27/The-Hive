@@ -21,10 +21,7 @@ const PLACEHOLDER_PREFIXES = [
   'example',
   'dummy',
   'xxx',
-  'my_',
-  'my-',
   'abc123',
-  'secret',
 ];
 
 export function looksLikePlaceholder(value: string): boolean {
