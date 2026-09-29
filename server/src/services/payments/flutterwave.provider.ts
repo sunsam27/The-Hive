@@ -81,12 +81,6 @@ function safeEqual(a: string, b: string): boolean {
   return timingSafeEqual(bufA, bufB);
 }
 
-function freelancerSharePercent(netAmount: number, grossAmount: number): number {
-  if (grossAmount <= 0) return 0;
-  const share = (netAmount / grossAmount) * 100;
-  return Math.max(0, Math.min(100, share));
-}
-
 function toDate(value: unknown): Date | null {
   if (typeof value !== 'string') return null;
   const parsed = new Date(value);
@@ -118,15 +112,13 @@ export const flutterwaveProvider: PaymentProvider = {
     };
 
     if (request.destinationAccountId) {
-      body.split = {
-        type: 'percentage',
-        subaccounts: [
-          {
-            subaccount: request.destinationAccountId,
-            share: freelancerSharePercent(request.netAmount, request.grossAmount),
-          },
-        ],
-      };
+      body.subaccounts = [
+        {
+          id: request.destinationAccountId,
+          transaction_charge_type: 'flat',
+          transaction_charge: request.platformFee,
+        },
+      ];
     }
 
     const res = await fetch(`${FLW_API}/payments`, {

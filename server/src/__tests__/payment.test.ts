@@ -336,7 +336,7 @@ describe('provider routing', () => {
 });
 
 describe('flutterwave split construction', () => {
-  it('sends a percentage split to the freelancer subaccount', async () => {
+  it('sends the platform fee as a flat commission to the freelancer subaccount', async () => {
     const fetchMock = vi.fn().mockResolvedValue({
       json: async () => ({ status: 'success', data: { link: checkoutLink } }),
     });
@@ -357,11 +357,14 @@ describe('flutterwave split construction', () => {
     const [, initArgs] = fetchMock.mock.calls[0] as any;
     const sentBody = JSON.parse(initArgs.body);
     expect(sentBody.amount).toBe(102);
-    expect(sentBody.split.type).toBe('percentage');
-    expect(sentBody.split.subaccounts[0]).toEqual({
-      subaccount: 'RS_SUBACCOUNT_1',
-      share: (100 / 102) * 100,
-    });
+    expect(sentBody.split).toBeUndefined();
+    expect(sentBody.subaccounts).toEqual([
+      {
+        id: 'RS_SUBACCOUNT_1',
+        transaction_charge_type: 'flat',
+        transaction_charge: 2,
+      },
+    ]);
   });
 
   it('omits the split when there is no connected account', async () => {
@@ -384,7 +387,7 @@ describe('flutterwave split construction', () => {
 
     const [, initArgs] = fetchMock.mock.calls[0] as any;
     const sentBody = JSON.parse(initArgs.body);
-    expect(sentBody.split).toBeUndefined();
+    expect(sentBody.subaccounts).toBeUndefined();
   });
 });
 
@@ -434,7 +437,7 @@ describe('POST /api/payments/initiate', () => {
     const [, initArgs] = fetchMock.mock.calls[0] as any;
     const sentBody = JSON.parse(initArgs.body);
     expect(sentBody.amount).toBe(102);
-    expect(sentBody.split.subaccounts[0].subaccount).toBe('acct_connected_1');
+    expect(sentBody.subaccounts[0].id).toBe('acct_connected_1');
   });
 
   it('falls back to a manual payout when the freelancer has no connected account', async () => {
@@ -457,7 +460,7 @@ describe('POST /api/payments/initiate', () => {
     expect(res.body.split).toBe('manual_payout');
 
     const [, initArgs] = fetchMock.mock.calls[0] as any;
-    expect(JSON.parse(initArgs.body).split).toBeUndefined();
+    expect(JSON.parse(initArgs.body).subaccounts).toBeUndefined();
   });
 
   it('issues a fresh checkout when the pending payment has no stored url', async () => {
