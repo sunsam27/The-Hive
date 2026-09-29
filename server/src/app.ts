@@ -36,7 +36,14 @@ app.use(cors({
     cb(new Error(`CORS: origin '${origin}' not allowed`));
   },
 }));
-app.use(express.json({ limit: '5mb' }));
+app.use(express.json({
+  limit: '5mb',
+  verify: (req, _res, buf) => {
+    if ((req as any).originalUrl?.includes('/webhook/')) {
+      (req as any).rawBody = buf.toString('utf8');
+    }
+  },
+}));
 
 app.use('/api', routes);
 

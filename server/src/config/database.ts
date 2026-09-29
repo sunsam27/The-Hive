@@ -1,4 +1,9 @@
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 import knex from 'knex';
+
+const migrationsDirectory = path.join(path.dirname(fileURLToPath(import.meta.url)), '..', 'db', 'migrations');
+const seedsDirectory = path.join(path.dirname(fileURLToPath(import.meta.url)), '..', 'db', 'seeds');
 
 const db = knex({
   client: 'pg',
@@ -10,11 +15,11 @@ const db = knex({
   },
   pool: { min: 0, max: 5 },
   migrations: {
-    directory: './src/db/migrations',
+    directory: migrationsDirectory,
     extension: 'js',
   },
   seeds: {
-    directory: './src/db/seeds',
+    directory: seedsDirectory,
     extension: 'js',
   },
 });

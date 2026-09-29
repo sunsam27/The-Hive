@@ -1,11 +1,11 @@
-import { describe, it, expect, vi, beforeEach, Mock } from 'vitest';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
 import request from 'supertest';
 import jwt from 'jsonwebtoken';
 
 type Q = { then: (fn: (value: any) => any) => Promise<any>; catch: (fn: (reason: any) => any) => Promise<any>; _queue: any[]; [key: string]: any };
 
 vi.mock('../db/index.js', () => {
-  function makeQ(queue: any[] = [], tag = ''): Q {
+  function makeQ(queue: any[] = []): Q {
     const q: Q = (_table?: string) => q;
     q._queue = queue;
     q.then = (fn: (value: any) => any) => Promise.resolve(queue.shift()).then(fn);
@@ -30,8 +30,8 @@ vi.mock('../db/index.js', () => {
 
   const mainQueue: any[] = [];
   const trxQueue: any[] = [];
-  const q = makeQ(mainQueue, 'MAIN');
-  const trx = makeQ(trxQueue, 'TRX');
+  const q = makeQ(mainQueue);
+  const trx = makeQ(trxQueue);
 
   const kn = (_table: string) => q;
   kn.transaction = vi.fn().mockImplementation(async (cb: (t: Q) => void) => cb(trx));

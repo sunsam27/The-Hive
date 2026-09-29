@@ -44,7 +44,7 @@ export async function extractReceiptData(imageBuffer: ArrayBuffer): Promise<Rece
 
     return { text, amount, currency, merchant, date };
   } catch (err: any) {
-    if (err.name === 'AbortError') throw new Error('Receipt processing timed out — try a smaller image');
+    if (err.name === 'AbortError') throw new Error('Receipt processing timed out — try a smaller image', { cause: err });
     throw err;
   } finally {
     clearTimeout(timeout);
@@ -73,14 +73,14 @@ function extractAmount(text: string): string {
     const trimmed = line.trim();
     const keywordMatch = keywords.some((k) => k.test(trimmed));
     if (!keywordMatch) continue;
-    const m = trimmed.match(/[\$€£¥]?\s*([\d,]+\.\d{2})\s*$/);
+    const m = trimmed.match(/[$€£¥]?\s*([\d,]+\.\d{2})\s*$/);
     if (m) {
       const result = parseAmount(m[1]);
       if (result) return result;
     }
   }
 
-  const currencyMatch = text.match(/[\$€£¥]\s*([\d,]+\.\d{2})/);
+  const currencyMatch = text.match(/[$€£¥]\s*([\d,]+\.\d{2})/);
   if (currencyMatch) {
     const result = parseAmount(currencyMatch[1]);
     if (result) return result;
@@ -97,7 +97,7 @@ function extractAmount(text: string): string {
 }
 
 function extractCurrency(text: string): string | null {
-  const match = text.match(/[\$€£¥]/);
+  const match = text.match(/[$€£¥]/);
   if (!match) return null;
   const map: Record<string, string> = { '$': 'USD', '€': 'EUR', '£': 'GBP', '¥': 'JPY' };
   return map[match[0]];
@@ -114,8 +114,8 @@ function extractMerchant(text: string): string {
 
 function extractDate(text: string): string {
   const patterns = [
-    /(\d{2})[\/-](\d{2})[\/-](\d{4})/,
-    /(\d{4})[\/-](\d{2})[\/-](\d{2})/,
+    /(\d{2})[/-](\d{2})[/-](\d{4})/,
+    /(\d{4})[/-](\d{2})[/-](\d{2})/,
     /(\d{1,2})\s+(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[a-z]*\s+(\d{4})/i,
   ];
   for (const pattern of patterns) {

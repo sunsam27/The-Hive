@@ -4,10 +4,10 @@ import * as paymentController from '../controllers/payment.controller.js';
 
 const router = Router();
 
-router.post('/webhook/flutterwave', paymentController.handleWebhook);
+router.post('/webhook/:provider', paymentController.handleWebhook);
 
 router.use(authenticate);
 router.post('/initiate', paymentController.initiate);
-router.get('/verify/:txRef', paymentController.verify);
+router.get('/verify/:reference', paymentController.verify);
 
 export default router;

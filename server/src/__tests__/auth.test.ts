@@ -29,7 +29,7 @@ vi.mock('../db/index.js', () => {
   const trxBuilder = buildQuery();
 
   const mockKnex = Object.assign(
-    (table: string) => queryBuilder,
+    (_table: string) => queryBuilder,
     {
       transaction: vi.fn().mockImplementation(async (cb: (trx: any) => void) => {
         await cb(trxBuilder);
@@ -52,6 +52,12 @@ const email = await import('../services/email.js');
 function getQuery() {
   return (db as any)() as ReturnType<typeof vi.fn> & Record<string, any>;
 }
+
+beforeEach(() => {
+  const q = getQuery();
+  q.first.mockReset();
+  q.returning.mockReset();
+});
 
 describe('POST /api/auth/signup', () => {
   beforeEach(() => {
@@ -203,5 +209,16 @@ describe('POST /api/auth/forgot-password', () => {
     expect(res.status).toBe(200);
     expect(res.body.message).toContain('If the email exists');
     expect(email.sendResetEmail).toHaveBeenCalled();
+  });
+});
+
+describe('query mock isolation', () => {
+  it('leaves an unconsumed value queued on first()', () => {
+    getQuery().first.mockResolvedValueOnce({ id: 'leak', verified: true });
+  });
+
+  it('does not leak that value into the following test', () => {
+    expect(getQuery().first()).toBeUndefined();
+    expect(getQuery().returning()).toBeUndefined();
   });
 });

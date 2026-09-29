@@ -10,7 +10,6 @@ export function generateInvoicePdf(invoice: any): Promise<Buffer> {
     doc.on('error', reject);
 
     const total = Number(invoice.amount) + Number(invoice.tax_amount || 0);
-    const pageWidth = doc.page.width - 100;
 
     doc.fontSize(24).font('Helvetica-Bold').text('RECEIPT', 50, 50);
 
