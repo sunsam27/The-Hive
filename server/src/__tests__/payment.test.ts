@@ -77,7 +77,21 @@ const mockExpense = {
 };
 
 const mockUser = { id: 'user-1', email: 'payer@example.com', name: 'Payer' };
-const mockFreelancer = { id: 'freelancer-1', provider_account_id: 'acct_connected_1' };
+
+function linkedAccount(provider: string, providerAccountId: string) {
+  return {
+    id: `pa-${provider}`,
+    user_id: 'freelancer-1',
+    provider,
+    provider_account_id: providerAccountId,
+    status: 'active',
+    details_submitted: true,
+    charges_enabled: true,
+    payouts_enabled: true,
+  };
+}
+
+const mockFreelancer = linkedAccount('stripe', 'acct_connected_1');
 
 const SECRET_HASH = 'a3f9c1d84b7e2056a3f9c1d84b7e2056';
 const STRIPE_SECRET = 'sk_test_placeholder_for_unit_tests_only';
@@ -421,7 +435,7 @@ describe('POST /api/payments/initiate', () => {
     kn._push({ ...mockExpense, currency: 'NGN' });
     kn._push(undefined);
     kn._push(mockUser);
-    kn._push(mockFreelancer);
+    kn._push(linkedAccount('flutterwave', 'RS_SUBACCOUNT_1'));
 
     const res = await request(app)
       .post('/api/payments/initiate')
@@ -437,10 +451,11 @@ describe('POST /api/payments/initiate', () => {
     const [, initArgs] = fetchMock.mock.calls[0] as any;
     const sentBody = JSON.parse(initArgs.body);
     expect(sentBody.amount).toBe(102);
-    expect(sentBody.subaccounts[0].id).toBe('acct_connected_1');
+    expect(sentBody.subaccounts[0].id).toBe('RS_SUBACCOUNT_1');
+    expect(sentBody.subaccounts[0].transaction_charge).toBe(2);
   });
 
-  it('falls back to a manual payout when the freelancer has no connected account', async () => {
+  it('falls back to a manual payout when the freelancer has no active account for the provider', async () => {
     const fetchMock = vi.fn().mockResolvedValue({
       json: async () => ({ status: 'success', data: { link: checkoutLink } }),
     });
@@ -449,7 +464,7 @@ describe('POST /api/payments/initiate', () => {
     kn._push({ ...mockExpense, currency: 'NGN' });
     kn._push(undefined);
     kn._push(mockUser);
-    kn._push({ id: 'freelancer-1', provider_account_id: null });
+    kn._push(undefined);
 
     const res = await request(app)
       .post('/api/payments/initiate')

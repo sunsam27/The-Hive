@@ -9,7 +9,8 @@ import {
   User as UserIcon,
   KeyRound,
   Menu,
-  X
+  X,
+  Landmark
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import ProfileModal from './ProfileModal';
@@ -60,6 +61,7 @@ const Sidebar = () => {
     { name: 'Workspaces', icon: <FolderKanban size={20} />, path: '/workspaces' },
     { name: 'All Expenses', icon: <Receipt size={20} />, path: '/expenses' },
     { name: 'My Receipts', icon: <FileText size={20} />, path: '/invoices' },
+    { name: 'Payout Accounts', icon: <Landmark size={20} />, path: '/settings/payouts' },
   ];
 
   const handleNavClick = () => setMobileOpen(false);

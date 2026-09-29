@@ -16,6 +16,7 @@ import type {
   ProviderTransaction,
   WebhookRequestLike,
 } from '../services/payments/types.js';
+import { applyAccountUpdate, resolveSplitAccountId } from '../services/payments/accounts.js';
 
 const FRONTEND_URL = process.env.FRONTEND_URL || process.env.CLIENT_URL || 'http://localhost:5173';
 
@@ -40,17 +41,16 @@ function paymentAmounts(fee: FeeBreakdown) {
   };
 }
 
-async function resolveRecipient(expense: any) {
+async function resolveRecipient(expense: any, provider: PaymentProvider) {
   if (!expense.submitter_id) {
     return { accountId: null, split: 'missing_submitter' as const };
   }
 
-  const recipient = await db('users').where({ id: expense.submitter_id }).first();
-  const accountId = recipient?.provider_account_id ?? null;
+  const accountId = await resolveSplitAccountId(expense.submitter_id, provider.name);
 
   if (!accountId) {
     console.warn(
-      `[payments] Expense ${expense.id}: submitter has no provider_account_id. ` +
+      `[payments] Expense ${expense.id}: submitter has no active ${provider.name} account. ` +
         `The full amount will land on the platform account and the freelancer must be paid out manually.`
     );
   }
@@ -135,7 +135,7 @@ export async function initiate(req: Request, res: Response, next: NextFunction) 
     const reference = generatePaymentReference(expenseId);
 
     const fee = calculateFee(parseFloat(expense.amount), { currency });
-    const recipient = await resolveRecipient(expense);
+    const recipient = await resolveRecipient(expense, provider);
     const description = expense.description
       ? `Expense: ${String(expense.description).slice(0, 120)}`
       : `Expense ${expenseId}`;
@@ -159,6 +159,7 @@ export async function initiate(req: Request, res: Response, next: NextFunction) 
         .update({
           provider: provider.name,
           provider_ref: reference,
+          provider_session_id: session.providerSessionId,
           checkout_url: session.checkoutUrl,
           gross_amount: fee.grossAmount,
           platform_fee: fee.platformFee,
@@ -180,6 +181,7 @@ export async function initiate(req: Request, res: Response, next: NextFunction) 
       payer_id: req.user!.id,
       provider: provider.name,
       provider_ref: reference,
+      provider_session_id: session.providerSessionId,
       checkout_url: session.checkoutUrl,
       amount: expense.amount,
       gross_amount: fee.grossAmount,
@@ -224,7 +226,10 @@ export async function verify(req: Request, res: Response, next: NextFunction) {
     if (provider?.isConfigured()) {
       let transaction: ProviderTransaction | null = null;
       try {
-        transaction = await provider.verifyByReference(payment.provider_ref);
+        transaction = await provider.verifyByReference(
+          payment.provider_ref,
+          payment.provider_session_id
+        );
       } catch {
         transaction = null;
       }
@@ -264,6 +269,14 @@ export async function handleWebhook(req: Request, res: Response, next: NextFunct
     const event = provider.parseWebhook(webhookRequest);
     if (event.type === 'ignored') {
       return res.json({ message: 'Webhook received' });
+    }
+
+    if (event.type === 'account.updated' && event.accountUpdate) {
+      const applied = await applyAccountUpdate(provider.name, event.accountUpdate);
+      return res.json({
+        message: applied ? 'Connected account updated' : 'Connected account not tracked',
+        tracked: applied,
+      });
     }
 
     if (!event.reference) {

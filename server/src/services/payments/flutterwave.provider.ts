@@ -139,7 +139,12 @@ export const flutterwaveProvider: PaymentProvider = {
     if (!checkoutUrl) {
       throw new Error('Flutterwave did not return a checkout link');
     }
-    return { reference: request.reference, checkoutUrl };
+    const transactionId = Array.isArray(json.data) ? undefined : json.data?.id;
+    return {
+      reference: request.reference,
+      checkoutUrl,
+      providerSessionId: transactionId == null ? null : String(transactionId),
+    };
   },
 
   async verifyByReference(reference: string): Promise<ProviderTransaction> {

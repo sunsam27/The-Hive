@@ -5,7 +5,7 @@ export async function logAudit(
   userId: string,
   action: string,
   resourceType: string,
-  resourceId: string,
+  resourceId: string | null,
   details?: Record<string, unknown>
 ) {
   const payload = {

@@ -17,6 +17,7 @@ import ChangePassword from './pages/auth/ChangePassword';
 import NotFound from './pages/NotFound';
 import InvoicesPage from './pages/InvoicesPage';
 import InvoiceCreate from './pages/InvoiceCreate';
+import PayoutSettings from './pages/PayoutSettings';
 
 function App() {
   return (
@@ -37,6 +38,7 @@ function App() {
           <Route path="/workspaces/:id/summary" element={<AuthGuard><SummaryView /></AuthGuard>} />
           <Route path="/expenses" element={<AuthGuard><ExpenseList /></AuthGuard>} />
           <Route path="/change-password" element={<AuthGuard><ChangePassword /></AuthGuard>} />
+          <Route path="/settings/payouts" element={<AuthGuard><PayoutSettings /></AuthGuard>} />
           <Route path="/expenses/:expenseId" element={<AuthGuard><ExpenseDetail /></AuthGuard>} />
           <Route path="/invoices" element={<AuthGuard><InvoicesPage /></AuthGuard>} />
           <Route path="/invoices/new" element={<AuthGuard><InvoiceCreate /></AuthGuard>} />

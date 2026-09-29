@@ -177,7 +177,30 @@ describe('stripe webhook signature verification', () => {
 describe('stripe webhook parsing', () => {
   const signedRequest = (raw: string) => ({ rawBody: raw, body: {}, headers: { 'stripe-signature': 't=1,v1=abc' } });
 
-  it('reports a completed checkout as a successful payment', () => {
+  it('reports a completed checkout as a successful payment using the metadata reference', () => {
+    constructEvent.mockReturnValue({
+      id: 'evt_1',
+      created: 1700000000,
+      type: 'checkout.session.completed',
+      data: {
+        object: {
+          id: 'cs_test_123',
+          payment_status: 'paid',
+          payment_intent: 'pi_test_123',
+          metadata: { reference: 'FINSYTE-ref-1' },
+        },
+      },
+    });
+
+    const event = stripeProvider.parseWebhook(signedRequest('{}'));
+
+    expect(event.type).toBe('payment.succeeded');
+    expect(event.reference).toBe('FINSYTE-ref-1');
+    expect(event.transactionId).toBe('pi_test_123');
+    expect(event.paidAt).toEqual(new Date(1700000000 * 1000));
+  });
+
+  it('falls back to the session id when the session carries no metadata', () => {
     constructEvent.mockReturnValue({
       id: 'evt_1',
       created: 1700000000,
@@ -193,10 +216,56 @@ describe('stripe webhook parsing', () => {
 
     const event = stripeProvider.parseWebhook(signedRequest('{}'));
 
-    expect(event.type).toBe('payment.succeeded');
     expect(event.reference).toBe('cs_test_123');
-    expect(event.transactionId).toBe('pi_test_123');
-    expect(event.paidAt).toEqual(new Date(1700000000 * 1000));
+  });
+
+  it('surfaces connected account status changes', () => {
+    constructEvent.mockReturnValue({
+      id: 'evt_1',
+      created: 1700000000,
+      type: 'account.updated',
+      data: {
+        object: {
+          id: 'acct_connected_1',
+          charges_enabled: true,
+          payouts_enabled: true,
+          details_submitted: true,
+          business_profile: { name: 'Ada Freelance' },
+        },
+      },
+    });
+
+    const event = stripeProvider.parseWebhook(signedRequest('{}'));
+
+    expect(event.type).toBe('account.updated');
+    expect(event.accountUpdate).toEqual({
+      providerAccountId: 'acct_connected_1',
+      status: 'active',
+      detailsSubmitted: true,
+      chargesEnabled: true,
+      payoutsEnabled: true,
+      businessName: 'Ada Freelance',
+    });
+  });
+
+  it('marks a connected account awaiting information as pending', () => {
+    constructEvent.mockReturnValue({
+      id: 'evt_1',
+      created: 1700000000,
+      type: 'account.updated',
+      data: {
+        object: {
+          id: 'acct_connected_1',
+          charges_enabled: false,
+          payouts_enabled: false,
+          details_submitted: false,
+        },
+      },
+    });
+
+    const event = stripeProvider.parseWebhook(signedRequest('{}'));
+
+    expect(event.accountUpdate?.status).toBe('pending');
   });
 
   it('treats an unpaid completed session as a failure', () => {
@@ -221,7 +290,7 @@ describe('stripe webhook parsing', () => {
 });
 
 describe('stripe reference verification', () => {
-  it('confirms a paid session', async () => {
+  it('confirms a paid session using the stored checkout session id', async () => {
     sessions.retrieve.mockResolvedValue({
       id: 'cs_test_123',
       payment_status: 'paid',
@@ -231,8 +300,9 @@ describe('stripe reference verification', () => {
       created: 1700000000,
     });
 
-    const result = await stripeProvider.verifyByReference('cs_test_123');
+    const result = await stripeProvider.verifyByReference('FINSYTE-ref-1', 'cs_test_123');
 
+    expect(sessions.retrieve).toHaveBeenCalledWith('cs_test_123');
     expect(result.status).toBe('completed');
     expect(result.transactionId).toBe('pi_test_123');
     expect(result.amount).toBe(102);
@@ -249,9 +319,17 @@ describe('stripe reference verification', () => {
       created: 1700000000,
     });
 
-    const result = await stripeProvider.verifyByReference('cs_test_123');
+    const result = await stripeProvider.verifyByReference('FINSYTE-ref-1', 'cs_test_123');
 
     expect(result.status).toBe('pending');
     expect(result.transactionId).toBeNull();
+  });
+
+  it('stays pending when no checkout session id was persisted', async () => {
+    const result = await stripeProvider.verifyByReference('FINSYTE-ref-1', null);
+
+    expect(result.status).toBe('pending');
+    expect(result.transactionId).toBeNull();
+    expect(sessions.retrieve).not.toHaveBeenCalled();
   });
 });

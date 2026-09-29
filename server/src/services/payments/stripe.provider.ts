@@ -1,5 +1,6 @@
 import Stripe from 'stripe';
 import type {
+  AccountStatus,
   CheckoutRequest,
   CheckoutSession,
   PaymentProvider,
@@ -27,11 +28,25 @@ const SIGNATURE_HEADER = 'stripe-signature';
 
 let client: Stripe | null = null;
 
-function getClient(): Stripe {
+export function getStripeClient(): Stripe {
   const secretKey = process.env.STRIPE_SECRET_KEY;
   if (!secretKey) throw new Error('Stripe not configured: STRIPE_SECRET_KEY must be set');
   if (!client) client = new Stripe(secretKey, { apiVersion: '2026-08-26.dahlia' });
   return client;
+}
+
+function getClient(): Stripe {
+  return getStripeClient();
+}
+
+export function mapStripeAccountStatus(account: {
+  charges_enabled?: boolean | null;
+  payouts_enabled?: boolean | null;
+  details_submitted?: boolean | null;
+}): AccountStatus {
+  if (account.charges_enabled && account.payouts_enabled) return 'active';
+  if (!account.details_submitted) return 'pending';
+  return 'restricted';
 }
 
 export function toMinorUnits(amount: number, currency: string): number {
@@ -115,12 +130,23 @@ export const stripeProvider: PaymentProvider = {
     );
 
     if (!session.url) throw new Error('Stripe did not return a checkout URL');
-    return { reference: session.id, checkoutUrl: session.url };
+    return { reference: request.reference, checkoutUrl: session.url, providerSessionId: session.id };
   },
 
-  async verifyByReference(reference: string): Promise<ProviderTransaction> {
+  async verifyByReference(reference: string, providerSessionId?: string | null): Promise<ProviderTransaction> {
+    const pending: ProviderTransaction = {
+      reference,
+      transactionId: null,
+      status: 'pending',
+      amount: null,
+      currency: null,
+      paidAt: null,
+    };
+
+    if (!providerSessionId || !providerSessionId.startsWith('cs_')) return pending;
+
     const stripe = getClient();
-    const session = await stripe.checkout.sessions.retrieve(reference);
+    const session = await stripe.checkout.sessions.retrieve(providerSessionId);
 
     const paid = session.payment_status === 'paid';
     const intentId =
@@ -162,6 +188,25 @@ export const stripeProvider: PaymentProvider = {
       return { type: 'ignored', reference: null, transactionId: null, paidAt: null, raw: request.body };
     }
 
+    if (event.type === 'account.updated') {
+      const account = event.data.object as Stripe.Account;
+      return {
+        type: 'account.updated',
+        reference: null,
+        transactionId: null,
+        paidAt: new Date(event.created * 1000),
+        raw: event,
+        accountUpdate: {
+          providerAccountId: account.id,
+          status: mapStripeAccountStatus(account),
+          detailsSubmitted: Boolean(account.details_submitted),
+          chargesEnabled: Boolean(account.charges_enabled),
+          payoutsEnabled: Boolean(account.payouts_enabled),
+          businessName: account.business_profile?.name ?? account.settings?.dashboard.display_name ?? null,
+        },
+      };
+    }
+
     if (event.type !== 'checkout.session.completed') {
       return { type: 'ignored', reference: null, transactionId: null, paidAt: null, raw: request.body };
     }
@@ -172,7 +217,7 @@ export const stripeProvider: PaymentProvider = {
 
     return {
       type: paid ? 'payment.succeeded' : 'payment.failed',
-      reference: session.id,
+      reference: session.metadata?.reference ?? session.id,
       transactionId: intentId,
       paidAt: new Date(event.created * 1000),
       raw: event,

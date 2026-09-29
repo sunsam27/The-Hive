@@ -16,6 +16,7 @@ export interface CheckoutRequest {
 export interface CheckoutSession {
   reference: string;
   checkoutUrl: string;
+  providerSessionId: string | null;
 }
 
 export interface ProviderTransaction {
@@ -27,7 +28,22 @@ export interface ProviderTransaction {
   paidAt: Date | null;
 }
 
-export type WebhookEventType = 'payment.succeeded' | 'payment.failed' | 'ignored';
+export type WebhookEventType =
+  | 'payment.succeeded'
+  | 'payment.failed'
+  | 'account.updated'
+  | 'ignored';
+
+export type AccountStatus = 'pending' | 'active' | 'restricted' | 'disabled';
+
+export interface AccountUpdatePayload {
+  providerAccountId: string;
+  status: AccountStatus;
+  detailsSubmitted: boolean;
+  chargesEnabled: boolean;
+  payoutsEnabled: boolean;
+  businessName: string | null;
+}
 
 export interface WebhookEvent {
   type: WebhookEventType;
@@ -35,6 +51,7 @@ export interface WebhookEvent {
   transactionId: string | null;
   paidAt: Date | null;
   raw: unknown;
+  accountUpdate?: AccountUpdatePayload;
 }
 
 export interface WebhookRequestLike {
@@ -49,7 +66,7 @@ export interface PaymentProvider {
   isConfigured(): boolean;
   supportsCurrency(currency: string): boolean;
   createCheckout(request: CheckoutRequest): Promise<CheckoutSession>;
-  verifyByReference(reference: string): Promise<ProviderTransaction>;
+  verifyByReference(reference: string, providerSessionId?: string | null): Promise<ProviderTransaction>;
   verifySignature(request: WebhookRequestLike): boolean;
   parseWebhook(request: WebhookRequestLike): WebhookEvent;
 }
