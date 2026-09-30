@@ -119,7 +119,7 @@ const EditExpenseModal = ({ isOpen, onClose, expense, onSaved }) => {
         .eem-textarea:focus {
           outline: none;
           border-color: var(--color-primary);
-          box-shadow: 0 0 0 3px rgba(0, 113, 227, 0.1);
+          box-shadow: 0 0 0 3px rgba(5, 191, 200, 0.18);
         }
         .row { display: flex; gap: 16px; }
         .col { flex: 1; }

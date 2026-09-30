@@ -259,7 +259,7 @@ const NewExpenseModal = ({ isOpen, onClose, workspaceId }) => {
         .currency-select-wrap { position: relative; width: 140px; display: flex; flex-direction: column; gap: 6px; }
         .currency-select-inner { position: relative; }
         .currency-select { appearance: none; width: 100%; padding: 10px 14px; border-radius: 10px; border: 1.5px solid var(--color-outline-variant); background: var(--color-surface); color: var(--color-on-surface); font-family: 'Space Grotesk', sans-serif; font-size: 14px; cursor: pointer; transition: border-color 0.15s ease, box-shadow 0.15s ease; }
-        .currency-select:focus { outline: none; border-color: var(--color-primary); box-shadow: 0 0 0 3px rgba(0, 113, 227, 0.1); }
+        .currency-select:focus { outline: none; border-color: var(--color-primary); box-shadow: 0 0 0 3px rgba(5, 191, 200, 0.18); }
         .currency-select-chevron { position: absolute; right: 12px; top: 50%; transform: translateY(-50%); pointer-events: none; color: var(--color-on-surface-variant); }
       `}</style>
     </Modal>

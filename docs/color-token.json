@@ -1,7 +1,7 @@
 {
     "color": {
         "key": {
-            "primary": "hsl(234, 100%, 57%)",
+            "primary": "hsl(183, 95%, 40%)",
             "secondary": "hsl(230, 36%, 67%)",
             "tertiary": "hsl(176, 36%, 46%)",
             "neutral": "hsl(220, 23%, 97%)",
@@ -10,22 +10,22 @@
         "palette": {
             "primary": {
                 "0": "hsl(0, 0%, 0%)",
-                "10": "hsl(235, 100%, 20%)",
-                "20": "hsl(233, 100%, 31%)",
-                "30": "hsl(232, 100%, 44%)",
-                "40": "hsl(234, 100%, 58%)",
-                "50": "hsl(234, 100%, 66%)",
-                "60": "hsl(234, 100%, 74%)",
-                "70": "hsl(235, 100%, 80%)",
-                "80": "hsl(235, 100%, 87%)",
-                "87": "hsl(237, 100%, 92%)",
-                "90": "hsl(238, 100%, 94%)",
-                "92": "hsl(240, 100%, 95%)",
-                "94": "hsl(243, 100%, 96%)",
-                "95": "hsl(248, 100%, 97%)",
-                "96": "hsl(249, 100%, 97%)",
-                "98": "hsl(266, 100%, 99%)",
-                "99": "hsl(300, 100%, 99%)",
+                "10": "hsl(185, 70%, 12%)",
+                "20": "hsl(184, 72%, 20%)",
+                "30": "hsl(183, 74%, 30%)",
+                "40": "hsl(183, 95%, 40%)",
+                "50": "hsl(182, 80%, 50%)",
+                "60": "hsl(182, 65%, 54%)",
+                "70": "hsl(182, 70%, 70%)",
+                "80": "hsl(182, 65%, 80%)",
+                "87": "hsl(182, 60%, 87%)",
+                "90": "hsl(182, 58%, 90%)",
+                "92": "hsl(182, 55%, 92%)",
+                "94": "hsl(182, 52%, 94%)",
+                "95": "hsl(182, 50%, 95%)",
+                "96": "hsl(182, 48%, 96%)",
+                "98": "hsl(182, 45%, 98%)",
+                "99": "hsl(182, 40%, 99%)",
                 "100": "hsl(0, 0%, 100%)"
             },
             "secondary": {
@@ -112,7 +112,7 @@
         "role": {
             "light": {
                 "primary": "{color.key.primary}",
-                "onPrimary": "{color.palette.primary.100}",
+                "onPrimary": "{color.palette.primary.10}",
                 "primaryContainer": "{color.palette.primary.80}",
                 "onPrimaryContainer": "{color.palette.primary.30}",
                 "secondary": "{color.palette.secondary.40}",
@@ -147,7 +147,7 @@
                 "surfaceContainerHighest": "{color.palette.neutral.90}"
             },
             "dark": {
-                "primary": "{color.key.primary}",
+                "primary": "{color.palette.primary.60}",
                 "onPrimary": "{color.palette.primary.20}",
                 "primaryContainer": "{color.palette.primary.30}",
                 "onPrimaryContainer": "{color.palette.primary.90}",

@@ -28,7 +28,7 @@ export default function InvoicesPage() {
     if (!deleteId) return;
     try {
       await invoiceService.delete(deleteId);
-      showToast('Receipt deleted', 'success');
+      showToast('Invoice deleted', 'success');
       setDeleteId(null);
       loadInvoices();
     } catch (err) {
@@ -39,7 +39,7 @@ export default function InvoicesPage() {
   async function handleConvert(id) {
     try {
       await invoiceService.convertToExpense(id);
-      showToast('Receipt converted to expense', 'success');
+      showToast('Invoice converted to expense', 'success');
       loadInvoices();
     } catch (err) {
       showToast(err?.response?.data?.error || 'Failed to convert', 'error');
@@ -52,7 +52,7 @@ export default function InvoicesPage() {
       const url = URL.createObjectURL(new Blob([res.data]));
       const a = document.createElement('a');
       a.href = url;
-      a.download = 'receipt.pdf';
+      a.download = 'invoice.pdf';
       a.click();
       URL.revokeObjectURL(url);
     } catch (err) {
@@ -76,12 +76,12 @@ export default function InvoicesPage() {
               <ArrowLeft size={18} />
               Dashboard
             </Link>
-            <h1 className="page-title">My Receipts</h1>
-            <p className="page-sub">Draft professional receipts for services rendered.</p>
+            <h1 className="page-title">My Invoices</h1>
+            <p className="page-sub">Draft professional invoices for services rendered.</p>
           </div>
           <Button variant="primary" onClick={() => navigate('/invoices/new')}>
             <Plus size={18} />
-            New Receipt
+            New Invoice
           </Button>
         </div>
 
@@ -90,17 +90,17 @@ export default function InvoicesPage() {
         ) : invoices.length === 0 ? (
           <div className="empty-state">
             <div className="empty-state-icon"><FileText size={24} /></div>
-            <h3>No receipts yet</h3>
-            <p>Create your first receipt for services rendered.</p>
+            <h3>No invoices yet</h3>
+            <p>Create your first invoice for services rendered.</p>
             <Button variant="primary" style={{ marginTop: 16 }} onClick={() => navigate('/invoices/new')}>
               <Plus size={18} />
-              Create Receipt
+              Create Invoice
             </Button>
           </div>
         ) : (
           <div className="data-row-list">
             <div className="data-row-header">
-              <span>Receipt #</span>
+              <span>Invoice #</span>
               <span className="data-row-col--wide">Client</span>
               <span>Amount</span>
               <span>Status</span>
@@ -141,9 +141,9 @@ export default function InvoicesPage() {
       </div>
 
       {deleteId && (
-        <Modal isOpen={true} onClose={() => setDeleteId(null)} title="Delete Receipt">
+        <Modal isOpen={true} onClose={() => setDeleteId(null)} title="Delete Invoice">
           <p style={{ marginBottom: 20, color: 'var(--color-on-surface-variant)', fontSize: 14 }}>
-            Are you sure you want to delete this receipt?
+            Are you sure you want to delete this invoice?
           </p>
           <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8 }}>
             <Button variant="ghost" onClick={() => setDeleteId(null)}>Cancel</Button>

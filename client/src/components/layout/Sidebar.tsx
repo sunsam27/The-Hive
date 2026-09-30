@@ -60,7 +60,7 @@ const Sidebar = () => {
     { name: 'Dashboard', icon: <LayoutDashboard size={20} />, path: '/dashboard' },
     { name: 'Workspaces', icon: <FolderKanban size={20} />, path: '/workspaces' },
     { name: 'All Expenses', icon: <Receipt size={20} />, path: '/expenses' },
-    { name: 'My Receipts', icon: <FileText size={20} />, path: '/invoices' },
+    { name: 'My Invoices', icon: <FileText size={20} />, path: '/invoices' },
     { name: 'Payout Accounts', icon: <Landmark size={20} />, path: '/settings/payouts' },
   ];
 

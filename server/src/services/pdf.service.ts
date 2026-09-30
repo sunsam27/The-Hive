@@ -11,7 +11,7 @@ export function generateInvoicePdf(invoice: any): Promise<Buffer> {
 
     const total = Number(invoice.amount) + Number(invoice.tax_amount || 0);
 
-    doc.fontSize(24).font('Helvetica-Bold').text('RECEIPT', 50, 50);
+    doc.fontSize(24).font('Helvetica-Bold').text('INVOICE', 50, 50);
 
     doc.fontSize(10).font('Helvetica')
       .text(`#${invoice.invoice_number}`, 50, 78)

@@ -39,7 +39,7 @@ const Input = forwardRef(({ label, error, helperText, className = '', ...props }
         .input-field:focus {
           outline: none;
           border-color: var(--color-primary);
-          box-shadow: 0 0 0 3px rgba(0, 113, 227, 0.1);
+          box-shadow: 0 0 0 3px rgba(5, 191, 200, 0.18);
         }
         .input-field-error {
           border-color: var(--color-error);

@@ -74,9 +74,9 @@ export default function InvoiceCreate() {
 
       const res = await invoiceService.create(payload);
       setInvoiceId(res.data.id);
-      showToast('Receipt created successfully', 'success');
+      showToast('Invoice created successfully', 'success');
     } catch (err) {
-      showToast(err?.response?.data?.error || 'Failed to create receipt', 'error');
+      showToast(err?.response?.data?.error || 'Failed to create invoice', 'error');
     } finally {
       setSubmitting(false);
     }
@@ -89,7 +89,7 @@ export default function InvoiceCreate() {
       const url = URL.createObjectURL(new Blob([res.data]));
       const a = document.createElement('a');
       a.href = url;
-      a.download = 'receipt.pdf';
+      a.download = 'invoice.pdf';
       a.click();
       URL.revokeObjectURL(url);
       showToast('PDF downloaded', 'success');
@@ -102,7 +102,7 @@ export default function InvoiceCreate() {
     if (!invoiceId) return;
     try {
       await invoiceService.convertToExpense(invoiceId);
-      showToast('Receipt converted to expense', 'success');
+      showToast('Invoice converted to expense', 'success');
       navigate('/expenses');
     } catch (err) {
       showToast(err?.response?.data?.error || 'Failed to convert', 'error');
@@ -118,10 +118,10 @@ export default function InvoiceCreate() {
           <div>
             <button className="back-link" onClick={() => navigate('/invoices')}>
               <ArrowLeft size={18} />
-              My Receipts
+              My Invoices
             </button>
-            <h1 className="page-title">Draft Receipt</h1>
-            <p className="page-sub">Create a professional receipt for services rendered.</p>
+            <h1 className="page-title">Draft Invoice</h1>
+            <p className="page-sub">Create a professional invoice for services rendered.</p>
           </div>
         </div>
 
@@ -233,7 +233,7 @@ export default function InvoiceCreate() {
             <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
               <Button variant="ghost" type="button" onClick={() => navigate('/invoices')}>Cancel</Button>
               <Button variant="primary" type="submit" disabled={submitting}>
-                {submitting ? 'Saving...' : 'Save Receipt'}
+                {submitting ? 'Saving...' : 'Save Invoice'}
               </Button>
             </div>
           </form>
@@ -241,14 +241,14 @@ export default function InvoiceCreate() {
           <div className="invoice-preview-card">
             <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 16 }}>
               <FileText size={18} />
-              <h3 style={{ fontSize: 15, fontWeight: 600 }}>Receipt Preview</h3>
+              <h3 style={{ fontSize: 15, fontWeight: 600 }}>Invoice Preview</h3>
             </div>
             {invoiceId ? (
               <div className="invoice-preview-ready">
                 <div className="invoice-preview-icon">
                   <FileText size={40} />
                 </div>
-                <p style={{ fontWeight: 600, fontSize: 14 }}>Receipt saved!</p>
+                <p style={{ fontWeight: 600, fontSize: 14 }}>Invoice saved!</p>
                 <p style={{ fontSize: 12, color: 'var(--color-on-surface-variant)' }}>What would you like to do?</p>
                 <div style={{ display: 'flex', gap: 8, marginTop: 12, flexDirection: 'column', width: '100%' }}>
                   <Button variant="primary" onClick={handleDownload} style={{ width: '100%' }}>
@@ -264,7 +264,7 @@ export default function InvoiceCreate() {
             ) : (
               <div className="invoice-preview-empty">
                 <p style={{ fontSize: 13, color: 'var(--color-on-surface-variant)', textAlign: 'center' }}>
-                  Fill in the form and save the receipt to see options.
+                  Fill in the form and save the invoice to see options.
                 </p>
                 <div className="invoice-preview-total">
                   <span>Total</span>

@@ -169,7 +169,7 @@ export async function convertToExpense(req: Request, res: Response, next: NextFu
         submitter_id: req.user!.id,
         amount: invoice.amount,
         currency: invoice.currency,
-        merchant: invoice.client_name || invoice.client_company || 'Service Receipt',
+        merchant: invoice.client_name || invoice.client_company || 'Service Invoice',
         expense_date: new Date(),
         description: invoice.service_desc,
         notes: `Invoice #${invoice.invoice_number}: ${invoice.service_desc}`,
@@ -199,7 +199,7 @@ export async function downloadPdf(req: Request, res: Response, next: NextFunctio
     const pdf = await generateInvoicePdf(invoice);
 
     res.setHeader('Content-Type', 'application/pdf');
-    res.setHeader('Content-Disposition', `attachment; filename="receipt-${invoice.invoice_number}.pdf"`);
+    res.setHeader('Content-Disposition', `attachment; filename="invoice-${invoice.invoice_number}.pdf"`);
     res.send(pdf);
   } catch (err) {
     next(err);
