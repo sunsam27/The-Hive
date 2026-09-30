@@ -176,10 +176,10 @@ const Landing = () => {
         --color-on-surface-variant: hsl(240, 2%, 48%);
         --color-surface-container: hsl(240, 8%, 95%);
         --color-outline-variant: hsl(240, 6%, 86%);
-        --color-primary-container: hsl(210, 75%, 93%);
-        --color-on-primary-container: hsl(210, 100%, 38%);
-        --color-primary: hsl(210, 100%, 48%);
-        --color-on-primary: hsl(0, 0%, 100%);
+        --color-primary-container: hsl(183, 63%, 93%);
+        --color-on-primary-container: hsl(184, 77%, 17%);
+        --color-primary: hsl(183, 95%, 40%);
+        --color-on-primary: hsl(176, 78%, 7%);
         --color-outline: hsl(240, 4%, 72%);
       }
 

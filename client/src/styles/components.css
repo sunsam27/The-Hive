@@ -1175,7 +1175,7 @@ textarea:focus-visible {
   margin-bottom: 48px;
 }
 .sv-total-card {
-  background: linear-gradient(135deg, var(--color-primary), hsl(210, 100%, 40%));
+  background: linear-gradient(135deg, var(--color-primary), hsl(183, 95%, 28%));
   color: var(--color-on-primary);
   padding: 36px;
   border-radius: 20px;
