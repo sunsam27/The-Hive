@@ -5,4 +5,9 @@ export * from './fees.js';
 export * from './accounts.js';
 export { flutterwaveProvider } from './flutterwave.provider.js';
 export { stripeProvider, getStripeClient, mapStripeAccountStatus } from './stripe.provider.js';
-export { generatePaymentReference } from './reference.js';
+export {
+  generatePaymentReference,
+  generatePlanReference,
+  isPlanReference,
+  PLAN_REFERENCE_PREFIX,
+} from './reference.js';

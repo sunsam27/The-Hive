@@ -33,7 +33,7 @@ const NewExpenseModal = ({ isOpen, onClose, workspaceId }) => {
     setShowRaw(false);
     setIsProcessing(true);
     try {
-      const result = await processReceipt(selectedFile);
+      const result = await processReceipt(selectedFile, workspaceId);
       if (result.amount) setValue('amount', result.amount);
       if (result.merchant) setValue('merchant', result.merchant);
       if (result.date) setValue('date', result.date);

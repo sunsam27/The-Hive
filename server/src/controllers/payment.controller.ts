@@ -7,6 +7,7 @@ import {
   calculateFee,
   generatePaymentReference,
   getProvider,
+  isPlanReference,
   resolveProvider,
   webhookSecretVar,
 } from '../services/payments/index.js';
@@ -17,6 +18,8 @@ import type {
   WebhookRequestLike,
 } from '../services/payments/types.js';
 import { applyAccountUpdate, resolveSplitAccountId } from '../services/payments/accounts.js';
+import { resolvePlan } from '../services/entitlements.js';
+import { activatePlanPurchase } from '../services/billing.js';
 
 const FRONTEND_URL = process.env.FRONTEND_URL || process.env.CLIENT_URL || 'http://localhost:5173';
 
@@ -134,7 +137,8 @@ export async function initiate(req: Request, res: Response, next: NextFunction) 
     const user = await db('users').where({ id: req.user!.id }).first();
     const reference = generatePaymentReference(expenseId);
 
-    const fee = calculateFee(parseFloat(expense.amount), { currency });
+    const workspace = await db('workspaces').where({ id: expense.workspace_id }).first();
+    const fee = calculateFee(parseFloat(expense.amount), { currency, plan: resolvePlan(workspace) });
     const recipient = await resolveRecipient(expense, provider);
     const description = expense.description
       ? `Expense: ${String(expense.description).slice(0, 120)}`
@@ -281,6 +285,38 @@ export async function handleWebhook(req: Request, res: Response, next: NextFunct
 
     if (!event.reference) {
       return res.status(400).json({ error: 'Webhook missing payment reference' });
+    }
+
+    // A Pro purchase is money coming in, not an expense reimbursement, so it is
+    // matched against plan_purchases by its PRO-namespaced reference and grants
+    // the paid period rather than marking an expense paid.
+    if (isPlanReference(event.reference)) {
+      const planPurchase = await db('plan_purchases')
+        .where({ provider: provider.name, provider_ref: event.reference })
+        .first();
+
+      if (planPurchase) {
+        if (planPurchase.status === 'completed') {
+          return res.json({ message: 'Already processed' });
+        }
+
+        if (event.type === 'payment.failed') {
+          await db('plan_purchases').where({ id: planPurchase.id }).update({ status: 'failed' });
+          return res.json({ message: 'Plan purchase marked failed' });
+        }
+
+        await db('plan_purchases')
+          .where({ id: planPurchase.id })
+          .update({ provider_transaction_id: event.transactionId });
+
+        await activatePlanPurchase(planPurchase.id);
+        await logAudit(db, planPurchase.purchaser_id, 'plan.purchase_completed', 'workspace', planPurchase.workspace_id, {
+          provider: provider.name,
+          reference: event.reference,
+        });
+
+        return res.json({ message: 'Plan purchase completed' });
+      }
     }
 
     const payment = await db('payments')

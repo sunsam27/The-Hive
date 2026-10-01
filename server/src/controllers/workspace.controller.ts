@@ -3,6 +3,7 @@ import db from '../db/index.js';
 import { checkWorkspaceAccess } from '../utils/accessControl.js';
 import { logAudit } from '../utils/auditLog.js';
 import { deleteFile } from '../utils/cloudinary.js';
+import { checkMemberCount, checkWorkspaceCount } from '../services/gate.js';
 
 export async function list(req: Request, res: Response, next: NextFunction) {
   try {
@@ -36,6 +37,9 @@ export async function list(req: Request, res: Response, next: NextFunction) {
 export async function create(req: Request, res: Response, next: NextFunction) {
   try {
     const { name, description } = req.validated as { name: string; description?: string };
+
+    const rejection = await checkWorkspaceCount(req.user!.id);
+    if (rejection) return res.status(rejection.status).json(rejection.body);
 
     let workspace: any;
     await db.transaction(async (trx: any) => {
@@ -240,6 +244,9 @@ export async function addMember(req: Request, res: Response, next: NextFunction)
       .where({ workspace_id: id, user_id: user.id })
       .first();
     if (existing) return res.status(409).json({ error: 'Already a member' });
+
+    const rejection = await checkMemberCount(id);
+    if (rejection) return res.status(rejection.status).json(rejection.body);
 
     const [member] = await db('workspace_members')
       .insert({ workspace_id: id, user_id: user.id, role: role || 'member' })

@@ -8,6 +8,7 @@ import receiptRoutes from './receipt.routes.js';
 import tagRoutes from './tag.routes.js';
 import invoiceRoutes from './invoices.routes.js';
 import paymentRoutes from './payments.routes.js';
+import billingRoutes from './billing.routes.js';
 
 const router = Router();
 
@@ -20,5 +21,6 @@ router.use('/summaries', summaryRoutes);
 router.use('/ocr', ocrRoutes);
 router.use('/invoices', invoiceRoutes);
 router.use('/payments', paymentRoutes);
+router.use('/billing', billingRoutes);
 
 export default router;

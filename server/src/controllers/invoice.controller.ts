@@ -4,6 +4,8 @@ import { checkWorkspaceAccess } from '../utils/accessControl.js';
 import { logAudit } from '../utils/auditLog.js';
 import { generateInvoiceNumber } from '../services/invoice.service.js';
 import { generateInvoicePdf } from '../services/pdf.service.js';
+import { checkMonthlyLimit } from '../services/gate.js';
+import { recordUsage } from '../services/entitlements.js';
 
 export async function create(req: Request, res: Response, next: NextFunction) {
   try {
@@ -16,31 +18,39 @@ export async function create(req: Request, res: Response, next: NextFunction) {
     const hasAccess = await checkWorkspaceAccess(workspaceId, req.user!.id);
     if (!hasAccess) return res.status(403).json({ error: 'Access denied' });
 
-    const invoiceNumber = await generateInvoiceNumber(db);
+    const rejection = await checkMonthlyLimit(workspaceId, 'invoices');
+    if (rejection) return res.status(rejection.status).json(rejection.body);
 
-    const [invoice] = await db('invoices')
-      .insert({
-        workspace_id: workspaceId,
-        created_by: req.user!.id,
-        invoice_number: invoiceNumber,
-        service_desc: serviceDesc,
-        amount,
-        currency: currency || 'USD',
-        client_name: clientName,
-        client_company: clientCompany,
-        client_email: clientEmail,
-        freelancer_name: freelancerName,
-        freelancer_business: freelancerBusiness,
-        freelancer_contact: freelancerContact,
-        tax_amount: taxAmount || 0,
-        tax_desc: taxDesc,
-        payment_terms: paymentTerms,
-        notes,
-        status: 'draft',
-      })
-      .returning('*');
+    const invoice = await db.transaction(async (trx: any) => {
+      const invoiceNumber = await generateInvoiceNumber(trx);
 
-    await logAudit(db, req.user!.id, 'invoice.created', 'invoice', invoice.id, { workspaceId });
+      const [row] = await trx('invoices')
+        .insert({
+          workspace_id: workspaceId,
+          created_by: req.user!.id,
+          invoice_number: invoiceNumber,
+          service_desc: serviceDesc,
+          amount,
+          currency: currency || 'USD',
+          client_name: clientName,
+          client_company: clientCompany,
+          client_email: clientEmail,
+          freelancer_name: freelancerName,
+          freelancer_business: freelancerBusiness,
+          freelancer_contact: freelancerContact,
+          tax_amount: taxAmount || 0,
+          tax_desc: taxDesc,
+          payment_terms: paymentTerms,
+          notes,
+          status: 'draft',
+        })
+        .returning('*');
+
+      await recordUsage(trx, workspaceId, 'invoices', 1);
+      await logAudit(trx, req.user!.id, 'invoice.created', 'invoice', row.id, { workspaceId });
+
+      return row;
+    });
 
     res.status(201).json(invoice);
   } catch (err) {

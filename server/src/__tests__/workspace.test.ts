@@ -23,8 +23,11 @@ vi.mock('../db/index.js', () => {
     q.orderBy = () => q;
     q.clone = () => q;
     q.countDistinct = () => q;
+    q.count = vi.fn(() => q);
     q.join = () => q;
     q.returning = vi.fn(() => q);
+    q.onConflict = vi.fn(() => q);
+    q.merge = vi.fn(() => q);
     return q;
   }
 
@@ -80,6 +83,8 @@ describe('GET /api/workspaces', () => {
 
 describe('POST /api/workspaces', () => {
   it('creates a workspace', async () => {
+    kn._push(undefined); // plan lookup: no existing owned workspace
+    kn._push({ count: 0 }); // workspace count within the free limit
     kn._trxPush([{ ...ws, name: 'New' }]);
 
     const res = await request(app)
@@ -152,6 +157,8 @@ describe('POST /api/workspaces/:id/members', () => {
     kn._push({ role: 'admin' });
     kn._push({ id: 'u2', email: 'a@b.com' });
     kn._push(undefined); // not already a member
+    kn._push({ ...ws, plan: 'free' }); // plan lookup for the member limit
+    kn._push({ count: 0 }); // member count within the free limit
     kn._push([{ workspace_id: 'ws-1', user_id: 'u2', role: 'member' }]); // insert result
     kn._push(undefined); // audit log insert
 

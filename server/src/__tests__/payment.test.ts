@@ -435,6 +435,7 @@ describe('POST /api/payments/initiate', () => {
     kn._push({ ...mockExpense, currency: 'NGN' });
     kn._push(undefined);
     kn._push(mockUser);
+    kn._push({ id: 'ws-1', plan: 'free', paid_until: null }); // plan lookup for the fee rate
     kn._push(linkedAccount('flutterwave', 'RS_SUBACCOUNT_1'));
 
     const res = await request(app)
