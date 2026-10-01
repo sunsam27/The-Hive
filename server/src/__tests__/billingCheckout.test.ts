@@ -64,6 +64,9 @@ beforeEach(() => {
   kn._reset();
   delete process.env.PRO_ANNUAL_PRICE_USD;
   delete process.env.PRO_ANNUAL_PRICE_NGN;
+  // An unconfigured currency is rejected rather than charged the numeric USD
+  // amount, so these tests must supply a real local price.
+  process.env.PRO_ANNUAL_PRICE_NGN = '60000';
   process.env.FLW_PUBLIC_KEY = 'FLWPUBK-test';
   process.env.FLW_SECRET_KEY = 'FLWSECK-test';
   vi.stubGlobal('fetch', vi.fn());
@@ -91,9 +94,10 @@ describe('POST /api/billing/checkout', () => {
 
     expect(res.status).toBe(200);
     expect(res.body.paymentUrl).toBe(checkoutUrl);
-    expect(res.body.netAmount).toBe(39);
+    expect(res.body.amount).toBe(60000);
+    expect(res.body.netAmount).toBe(60000);
     expect(res.body.platformFee).toBe(0);
-    expect(res.body.grossAmount).toBe(39);
+    expect(res.body.grossAmount).toBe(60000);
   });
 
   it('never splits a plan purchase to a connected account', async () => {
@@ -110,7 +114,7 @@ describe('POST /api/billing/checkout', () => {
 
     const body = JSON.parse((fetchMock.mock.calls[0] as any)[1].body as string);
     expect(body.subaccounts).toBeUndefined();
-    expect(body.amount).toBe(39);
+    expect(body.amount).toBe(60000);
   });
 
   it('generates a plan-scoped reference rather than an expense reference', async () => {
@@ -138,6 +142,23 @@ describe('POST /api/billing/checkout', () => {
 
     expect(res.status).toBe(400);
     expect(res.body.error).toContain('XYZ');
+    expect(fetch).not.toHaveBeenCalled();
+  });
+
+  it('refuses a currency with no configured price instead of charging the USD number', async () => {
+    // Guards against charging someone "39 NGN": without an explicit local
+    // price the checkout must fail rather than reuse the USD amount.
+    delete process.env.PRO_ANNUAL_PRICE_NGN;
+    kn._push(workspace);
+    kn._push(user);
+
+    const res = await request(app)
+      .post('/api/billing/checkout')
+      .set(authHeader)
+      .send({ workspaceId: 'ws-1', currency: 'NGN' });
+
+    expect(res.status).toBe(400);
+    expect(res.body.error).toContain('PRO_ANNUAL_PRICE_NGN');
     expect(fetch).not.toHaveBeenCalled();
   });
 

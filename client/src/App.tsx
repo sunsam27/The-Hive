@@ -1,4 +1,4 @@
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { Routes, Route } from 'react-router-dom';
 import AuthGuard from './components/auth/AuthGuard';
 import Landing from './pages/Landing';
 import Dashboard from './pages/Dashboard';
@@ -23,31 +23,29 @@ import BillingPage from './pages/BillingPage';
 function App() {
   return (
     <ErrorBoundary>
-      <Router>
-        <a href="#main-content" className="skip-link">Skip to content</a>
-        <Routes>
-          <Route path="/" element={<Landing />} />
-          <Route path="/login" element={<Login />} />
-          <Route path="/signup" element={<Signup />} />
-          <Route path="/forgot-password" element={<ForgotPassword />} />
-          <Route path="/verify-email/:token" element={<VerifyEmail />} />
-          <Route path="/reset-password" element={<ResetPassword />} />
+      <a href="#main-content" className="skip-link">Skip to content</a>
+      <Routes>
+        <Route path="/" element={<Landing />} />
+        <Route path="/login" element={<Login />} />
+        <Route path="/signup" element={<Signup />} />
+        <Route path="/forgot-password" element={<ForgotPassword />} />
+        <Route path="/verify-email/:token" element={<VerifyEmail />} />
+        <Route path="/reset-password" element={<ResetPassword />} />
 
-          <Route path="/dashboard" element={<AuthGuard><Dashboard /></AuthGuard>} />
-          <Route path="/workspaces" element={<AuthGuard><WorkspaceList /></AuthGuard>} />
-          <Route path="/workspaces/:id" element={<AuthGuard><WorkspaceView /></AuthGuard>} />
-          <Route path="/workspaces/:id/summary" element={<AuthGuard><SummaryView /></AuthGuard>} />
-          <Route path="/workspaces/:id/billing" element={<AuthGuard><BillingPage /></AuthGuard>} />
-          <Route path="/expenses" element={<AuthGuard><ExpenseList /></AuthGuard>} />
-          <Route path="/change-password" element={<AuthGuard><ChangePassword /></AuthGuard>} />
-          <Route path="/settings/payouts" element={<AuthGuard><PayoutSettings /></AuthGuard>} />
-          <Route path="/expenses/:expenseId" element={<AuthGuard><ExpenseDetail /></AuthGuard>} />
-          <Route path="/invoices" element={<AuthGuard><InvoicesPage /></AuthGuard>} />
-          <Route path="/invoices/new" element={<AuthGuard><InvoiceCreate /></AuthGuard>} />
+        <Route path="/dashboard" element={<AuthGuard><Dashboard /></AuthGuard>} />
+        <Route path="/workspaces" element={<AuthGuard><WorkspaceList /></AuthGuard>} />
+        <Route path="/workspaces/:id" element={<AuthGuard><WorkspaceView /></AuthGuard>} />
+        <Route path="/workspaces/:id/summary" element={<AuthGuard><SummaryView /></AuthGuard>} />
+        <Route path="/workspaces/:id/billing" element={<AuthGuard><BillingPage /></AuthGuard>} />
+        <Route path="/expenses" element={<AuthGuard><ExpenseList /></AuthGuard>} />
+        <Route path="/change-password" element={<AuthGuard><ChangePassword /></AuthGuard>} />
+        <Route path="/settings/payouts" element={<AuthGuard><PayoutSettings /></AuthGuard>} />
+        <Route path="/expenses/:expenseId" element={<AuthGuard><ExpenseDetail /></AuthGuard>} />
+        <Route path="/invoices" element={<AuthGuard><InvoicesPage /></AuthGuard>} />
+        <Route path="/invoices/new" element={<AuthGuard><InvoiceCreate /></AuthGuard>} />
 
-          <Route path="*" element={<NotFound />} />
-        </Routes>
-      </Router>
+        <Route path="*" element={<NotFound />} />
+      </Routes>
     </ErrorBoundary>
   );
 }

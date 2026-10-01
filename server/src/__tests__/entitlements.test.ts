@@ -221,9 +221,19 @@ describe('pro pricing', () => {
     expect(proAnnualPriceUsd()).toBe(59);
   });
 
-  it('falls back to the USD price when a currency has no local price yet', () => {
+  it('refuses a currency with no configured price rather than reusing the USD number', () => {
+    // Falling back would charge "39 NGN", so an unpriced currency must be null.
     expect(proAnnualPrice('usd')).toBe(39);
-    expect(proAnnualPrice('NGN')).toBe(39);
+    expect(proAnnualPrice('NGN')).toBeNull();
+    expect(proAnnualPrice('GHS')).toBeNull();
+  });
+
+  it('only advertises currencies it can actually charge', () => {
+    process.env.PRO_ANNUAL_PRICE_NGN = '60000';
+    const codes = publicPlan('pro').currencies.map((c: { code: string }) => c.code);
+    expect(codes).toContain('NGN');
+    expect(codes).toContain('USD');
+    expect(codes).not.toContain('GHS');
   });
 
   it('uses an environment price when a currency is configured', () => {
