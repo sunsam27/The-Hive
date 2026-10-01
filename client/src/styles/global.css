@@ -20,6 +20,21 @@ body {
   transition: background-color 0.3s ease, color 0.3s ease;
 }
 
+/*
+ * Only animate theme changes when the visitor asked for them. The transition
+ * otherwise also plays during the initial paint, which turns a dark page into
+ * a visible light-to-dark sweep on every refresh.
+ */
+@media (prefers-reduced-motion: no-preference) {
+  html.theme-ready body {
+    transition: background-color 0.3s ease, color 0.3s ease;
+  }
+}
+
+html:not(.theme-ready) body {
+  transition: none;
+}
+
 img, picture, video, canvas, svg {
   display: block;
   max-width: 100%;

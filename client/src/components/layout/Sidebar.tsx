@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { NavLink } from 'react-router-dom';
+import { NavLink, useLocation } from 'react-router-dom';
 import { 
   LayoutDashboard, 
   FolderKanban, 
@@ -22,6 +22,7 @@ import ThemeToggle from '../ui/ThemeToggle';
 const Sidebar = () => {
   const { user, logout } = useAuth();
   const { isPro, workspaceId } = useBilling();
+  const location = useLocation();
   const [profileModalOpen, setProfileModalOpen] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
   const [avatarBlob, setAvatarBlob] = useState(null);
@@ -51,23 +52,43 @@ const Sidebar = () => {
   }, [user?.avatar_url]);
 
   useEffect(() => {
-    if (mobileOpen) {
-      document.body.style.overflow = 'hidden';
-    } else {
-      document.body.style.overflow = 'unset';
+    if (!mobileOpen) {
+      document.body.style.overflow = '';
+      return undefined;
     }
-    return () => { document.body.style.overflow = 'unset'; };
+
+    // Locking the page stops it scrolling behind the drawer. The drawer scrolls
+    // its own nav, so this must not be relied on to reveal the footer.
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+
+    const onKey = (e) => {
+      if (e.key === 'Escape') setMobileOpen(false);
+    };
+    document.addEventListener('keydown', onKey);
+
+    return () => {
+      document.body.style.overflow = previousOverflow;
+      document.removeEventListener('keydown', onKey);
+    };
   }, [mobileOpen]);
 
   const navItems = [
-    { name: 'Dashboard', icon: <LayoutDashboard size={20} />, path: '/dashboard' },
-    { name: 'Workspaces', icon: <FolderKanban size={20} />, path: '/workspaces' },
-    { name: 'All Expenses', icon: <Receipt size={20} />, path: '/expenses' },
-    { name: 'My Invoices', icon: <FileText size={20} />, path: '/invoices' },
-    { name: 'Payout Accounts', icon: <Landmark size={20} />, path: '/settings/payouts' },
+    { name: 'Dashboard', icon: <LayoutDashboard size={17} />, path: '/dashboard' },
+    { name: 'Workspaces', icon: <FolderKanban size={17} />, path: '/workspaces' },
+    { name: 'All Expenses', icon: <Receipt size={17} />, path: '/expenses' },
+    { name: 'My Invoices', icon: <FileText size={17} />, path: '/invoices' },
+    { name: 'Payout Accounts', icon: <Landmark size={17} />, path: '/settings/payouts' },
   ];
 
   const billingPath = workspaceId ? `/workspaces/${workspaceId}/billing` : '/workspaces';
+
+  // Billing lives under /workspaces, and NavLink treats a path as active for
+  // every deeper route too, so the Workspaces link would light up on the billing
+  // page. Billing is the only sub-route with its own nav entry, so treat
+  // everything else under a workspace as part of the Workspaces section.
+  const isBillingRoute = /^\/workspaces\/[^/]+\/billing\/?$/.test(location.pathname);
+  const onWorkspacesSection = /^\/workspaces(\/[^/]+)*\/?$/.test(location.pathname);
 
   const handleNavClick = () => setMobileOpen(false);
 
@@ -79,11 +100,18 @@ const Sidebar = () => {
 
       <nav className="sidebar-nav" aria-label="Main navigation">
         {navItems.map((item) => (
-          <NavLink 
-            key={item.path} 
+          <NavLink
+            key={item.path}
             to={item.path}
             end={item.path === '/dashboard'}
-            className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}
+            className={({ isActive }) => {
+              // Workspaces covers the list and a single workspace, but the
+              // billing page has its own link, so only one of them is active.
+              if (item.path === '/workspaces') {
+                return `nav-link ${onWorkspacesSection && !isBillingRoute ? 'active' : ''}`;
+              }
+              return `nav-link ${isActive ? 'active' : ''}`;
+            }}
             onClick={handleNavClick}
             aria-label={item.name}
           >
@@ -93,11 +121,12 @@ const Sidebar = () => {
         ))}
         <NavLink
           to={billingPath}
-          className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}
+          end
+          className={({ isActive }) => `nav-link ${isActive || isBillingRoute ? 'active' : ''}`}
           onClick={handleNavClick}
           aria-label="Plan & Billing"
         >
-          <span className="nav-icon" aria-hidden="true"><Sparkles size={20} /></span>
+          <span className="nav-icon" aria-hidden="true"><Sparkles size={17} /></span>
           <span className="nav-label">Plan &amp; Billing</span>
           {!isPro && (
             <span className="plan-badge">Free</span>
@@ -126,11 +155,11 @@ const Sidebar = () => {
           </div>
         </div>
         <NavLink to="/change-password" className="nav-link" onClick={handleNavClick} aria-label="Change password">
-          <KeyRound size={16} aria-hidden="true" />
+          <span className="nav-icon nav-icon--sm" aria-hidden="true"><KeyRound size={13} /></span>
           <span>Change Password</span>
         </NavLink>
         <button onClick={() => { logout(); handleNavClick(); }} className="logout-btn" aria-label="Logout">
-          <LogOut size={16} aria-hidden="true" />
+          <span className="nav-icon nav-icon--sm" aria-hidden="true"><LogOut size={13} /></span>
           <span>Logout</span>
         </button>
       </div>
@@ -163,9 +192,27 @@ const Sidebar = () => {
       )}
 
       <style>{`
+        /* Plate colours are defined here rather than in tokens.css so the
+           treatment stays scoped to the sidebar. */
+        :root {
+          --nav-plate-top: hsl(183, 62%, 91%);
+          --nav-plate-bottom: hsl(183, 52%, 80%);
+          --nav-glyph: hsl(183, 88%, 26%);
+          --nav-active-bottom: hsl(183, 92%, 33%);
+        }
+        .dark {
+          --nav-plate-top: hsl(183, 44%, 29%);
+          --nav-plate-bottom: hsl(183, 50%, 20%);
+          --nav-glyph: hsl(182, 70%, 68%);
+          --nav-active-bottom: hsl(183, 62%, 44%);
+        }
+
         .sidebar {
           width: 260px;
           height: 100vh;
+          /* dvh tracks the visible area when mobile browser chrome collapses,
+             so the drawer never overflows the screen it is drawn over. */
+          height: 100dvh;
           background: var(--color-surface);
           border-right: 1px solid var(--color-outline-variant);
           display: flex;
@@ -173,6 +220,9 @@ const Sidebar = () => {
           position: sticky;
           top: 0;
           z-index: 100;
+          /* The column itself never scrolls: .sidebar-nav scrolls instead so
+             the footer (profile, change password, logout) stays reachable. */
+          overflow: hidden;
         }
         .sidebar-brand {
           padding: 28px 20px 24px;
@@ -186,6 +236,13 @@ const Sidebar = () => {
         }
         .sidebar-nav {
           flex: 1;
+          /* min-height:0 lets this actually shrink inside the flex column;
+             without it the default min-content size keeps the whole column
+             taller than the viewport and the footer is pushed off-screen. */
+          min-height: 0;
+          overflow-y: auto;
+          overscroll-behavior: contain;
+          -webkit-overflow-scrolling: touch;
           padding: 0 10px;
           display: flex;
           flex-direction: column;
@@ -213,12 +270,57 @@ const Sidebar = () => {
           color: var(--color-on-primary-container);
           font-weight: 600;
         }
+        /* Soft 3D icon plates: a raised rounded tile with a vertical gradient,
+           a top inner highlight and a contact shadow, so the glyph reads as
+           sitting on a physical surface rather than being drawn flat. */
         .nav-icon {
-          display: flex;
+          display: inline-flex;
           align-items: center;
           justify-content: center;
-          width: 20px;
-          height: 20px;
+          width: 28px;
+          height: 28px;
+          flex: 0 0 auto;
+          border-radius: 8px;
+          background: linear-gradient(
+            180deg,
+            var(--nav-plate-top) 0%,
+            var(--nav-plate-bottom) 100%
+          );
+          box-shadow:
+            0 1px 2px rgba(0, 0, 0, 0.16),
+            inset 0 1px 0 rgba(255, 255, 255, 0.55),
+            inset 0 -1px 1px rgba(0, 0, 0, 0.08);
+          color: var(--nav-glyph);
+          transition: background 0.2s ease, color 0.2s ease, box-shadow 0.2s ease;
+        }
+        /* Lifts the glyph off the plate so it does not look printed on. */
+        .nav-icon svg {
+          filter: drop-shadow(0 1px 1px rgba(0, 0, 0, 0.22));
+        }
+        /* The active row is the focus, so its plate takes the full brand
+           colour instead of the muted default. */
+        .nav-link.active .nav-icon {
+          background: linear-gradient(
+            180deg,
+            var(--color-primary) 0%,
+            var(--nav-active-bottom) 100%
+          );
+          color: var(--color-on-primary);
+          box-shadow:
+            0 2px 4px rgba(0, 0, 0, 0.2),
+            inset 0 1px 0 rgba(255, 255, 255, 0.35),
+            inset 0 -1px 1px rgba(0, 0, 0, 0.12);
+        }
+        .nav-link.active .nav-icon svg {
+          filter: drop-shadow(0 1px 1px rgba(0, 0, 0, 0.3));
+        }
+        .nav-icon--sm {
+          width: 22px;
+          height: 22px;
+          border-radius: 7px;
+        }
+        .nav-icon--sm svg {
+          filter: drop-shadow(0 1px 1px rgba(0, 0, 0, 0.18));
         }
         .plan-badge {
           margin-left: auto;
@@ -237,8 +339,10 @@ const Sidebar = () => {
           color: var(--color-on-primary);
         }
         .sidebar-footer {
-          padding: 12px 10px 20px;
+          flex: 0 0 auto;
+          padding: 12px 10px calc(20px + env(safe-area-inset-bottom, 0px));
           border-top: 1px solid var(--color-outline-variant);
+          background: var(--color-surface);
         }
         .sidebar-footer-row {
           display: flex;
@@ -309,6 +413,18 @@ const Sidebar = () => {
           background: var(--color-error-container);
           color: var(--color-on-error-container);
         }
+        /* Tint the plate with the row so the hover reads as one object. */
+        .logout-btn:hover .nav-icon {
+          background: linear-gradient(
+            180deg,
+            var(--color-error-container) 0%,
+            var(--color-error-container) 100%
+          );
+          color: var(--color-error);
+          box-shadow:
+            0 1px 2px rgba(0, 0, 0, 0.14),
+            inset 0 1px 0 rgba(255, 255, 255, 0.35);
+        }
         .sidebar-avatar-img {
           width: 100%;
           height: 100%;
@@ -370,9 +486,23 @@ const Sidebar = () => {
             left: 0;
             top: 0;
             height: 100vh;
+            height: 100dvh;
+            /* Leave room on narrow phones so the drawer never covers the
+               whole screen and traps the content behind it. */
+            max-width: 82vw;
             z-index: 160;
-            animation: slideInRight 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+            display: flex;
+            flex-direction: column;
+            /* Scrolling must happen on .sidebar-nav, not the overlay. */
+            overscroll-behavior: contain;
+            animation: sidebarSlideIn 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+            box-shadow: 8px 0 24px rgba(0, 0, 0, 0.16);
           }
+        }
+
+        @keyframes sidebarSlideIn {
+          from { transform: translateX(-100%); }
+          to { transform: translateX(0); }
         }
       `}</style>
       <ProfileModal isOpen={profileModalOpen} onClose={() => setProfileModalOpen(false)} />
