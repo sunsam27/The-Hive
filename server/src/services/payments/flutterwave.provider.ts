@@ -224,6 +224,8 @@ export const flutterwaveProvider: PaymentProvider = {
       reference: data.tx_ref,
       transactionId: String(data.id),
       paidAt: toDate(data.created_at),
+      amount: toNumber(data.amount),
+      currency: typeof data.currency === 'string' ? data.currency.toUpperCase() : null,
       raw: request.body,
     };
   },

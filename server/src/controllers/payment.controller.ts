@@ -15,6 +15,7 @@ import type { FeeBreakdown } from '../services/payments/fees.js';
 import type {
   PaymentProvider,
   ProviderTransaction,
+  WebhookEvent,
   WebhookRequestLike,
 } from '../services/payments/types.js';
 import { applyAccountUpdate, resolveSplitAccountId } from '../services/payments/accounts.js';
@@ -42,6 +43,23 @@ function paymentAmounts(fee: FeeBreakdown) {
     platformFee: fee.platformFee,
     grossAmount: fee.grossAmount,
   };
+}
+
+/**
+ * Guards against a webhook that settles a different amount or currency than we
+ * charged for, which would otherwise hand out a Pro period for free.
+ */
+function planPaymentMatches(
+  event: WebhookEvent,
+  purchase: { amount: number; currency: string }
+): boolean {
+  if (typeof event.amount === 'number' && Math.abs(event.amount - Number(purchase.amount)) > 0.01) {
+    return false;
+  }
+  if (event.currency && String(event.currency).toUpperCase() !== String(purchase.currency).toUpperCase()) {
+    return false;
+  }
+  return true;
 }
 
 async function resolveRecipient(expense: any, provider: PaymentProvider) {
@@ -308,6 +326,14 @@ export async function handleWebhook(req: Request, res: Response, next: NextFunct
         await db('plan_purchases')
           .where({ id: planPurchase.id })
           .update({ provider_transaction_id: event.transactionId });
+
+        // Only grant the period if the provider says the right money arrived.
+        if (!planPaymentMatches(event, planPurchase)) {
+          await db('plan_purchases')
+            .where({ id: planPurchase.id })
+            .update({ status: 'failed', meta: { reason: 'amount_or_currency_mismatch' } });
+          return res.status(400).json({ error: 'Plan payment amount did not match the Pro price' });
+        }
 
         await activatePlanPurchase(planPurchase.id);
         await logAudit(db, planPurchase.purchaser_id, 'plan.purchase_completed', 'workspace', planPurchase.workspace_id, {

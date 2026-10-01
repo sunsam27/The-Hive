@@ -220,6 +220,10 @@ export const stripeProvider: PaymentProvider = {
       reference: session.metadata?.reference ?? session.id,
       transactionId: intentId,
       paidAt: new Date(event.created * 1000),
+      amount: typeof session.amount_total === 'number'
+        ? toMajorUnits(session.amount_total, session.currency || 'USD')
+        : null,
+      currency: session.currency ? session.currency.toUpperCase() : null,
       raw: event,
     };
   },

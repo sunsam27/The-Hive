@@ -50,6 +50,9 @@ export interface WebhookEvent {
   reference: string | null;
   transactionId: string | null;
   paidAt: Date | null;
+  /** Gross amount actually settled, used to confirm a plan payment is the right size. */
+  amount?: number | null;
+  currency?: string | null;
   raw: unknown;
   accountUpdate?: AccountUpdatePayload;
 }

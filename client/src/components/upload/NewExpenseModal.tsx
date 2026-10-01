@@ -7,6 +7,8 @@ import Button from '../ui/Button';
 import { processReceipt } from '../../services/ocrService';
 import { expenseService } from '../../services/expenseService';
 import { useToast } from '../../hooks/useToast';
+import { isPlanLimitError } from '../../services/billingService';
+import { useUpgrade } from '../../context/UpgradeContext';
 import { CURRENCIES } from '../../constants/currencies';
 
 const PRESET_TAGS = ['Travel', 'Ads', 'Software', 'Office Supplies'];
@@ -22,6 +24,7 @@ const NewExpenseModal = ({ isOpen, onClose, workspaceId }) => {
   const [currency, setCurrency] = useState('USD');
   const [submitting, setSubmitting] = useState(false);
   const { showToast } = useToast();
+  const { showUpgrade } = useUpgrade();
   const { register, handleSubmit, setValue, reset, formState: { errors } } = useForm();
 
   const handleFileChange = async (e) => {
@@ -40,6 +43,11 @@ const NewExpenseModal = ({ isOpen, onClose, workspaceId }) => {
       if (result.currency) setCurrency(result.currency);
       if (result.text) setRawText(result.text);
     } catch (err) {
+      if (isPlanLimitError(err)) {
+        setIsProcessing(false);
+        showUpgrade(err);
+        return;
+      }
       setError(err?.response?.data?.error || err?.message || 'OCR failed');
     } finally {
       setIsProcessing(false);

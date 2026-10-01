@@ -10,15 +10,18 @@ import {
   KeyRound,
   Menu,
   X,
-  Landmark
+  Landmark,
+  Sparkles
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
+import { useBilling } from '../../context/BillingContext';
 import ProfileModal from './ProfileModal';
 import { getFileUrl } from '../../services/api';
 import ThemeToggle from '../ui/ThemeToggle';
 
 const Sidebar = () => {
   const { user, logout } = useAuth();
+  const { isPro, workspaceId } = useBilling();
   const [profileModalOpen, setProfileModalOpen] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
   const [avatarBlob, setAvatarBlob] = useState(null);
@@ -64,6 +67,8 @@ const Sidebar = () => {
     { name: 'Payout Accounts', icon: <Landmark size={20} />, path: '/settings/payouts' },
   ];
 
+  const billingPath = workspaceId ? `/workspaces/${workspaceId}/billing` : '/workspaces';
+
   const handleNavClick = () => setMobileOpen(false);
 
   const sidebarContent = (
@@ -86,6 +91,21 @@ const Sidebar = () => {
             <span className="nav-label">{item.name}</span>
           </NavLink>
         ))}
+        <NavLink
+          to={billingPath}
+          className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}
+          onClick={handleNavClick}
+          aria-label="Plan & Billing"
+        >
+          <span className="nav-icon" aria-hidden="true"><Sparkles size={20} /></span>
+          <span className="nav-label">Plan &amp; Billing</span>
+          {!isPro && (
+            <span className="plan-badge">Free</span>
+          )}
+          {isPro && (
+            <span className="plan-badge pro">Pro</span>
+          )}
+        </NavLink>
       </nav>
 
       <div className="sidebar-footer">
@@ -199,6 +219,22 @@ const Sidebar = () => {
           justify-content: center;
           width: 20px;
           height: 20px;
+        }
+        .plan-badge {
+          margin-left: auto;
+          padding: 2px 8px;
+          border-radius: 999px;
+          background: var(--color-surface-container);
+          color: var(--color-on-surface-variant);
+          font-family: 'Space Grotesk', sans-serif;
+          font-size: 10px;
+          font-weight: 700;
+          text-transform: uppercase;
+          letter-spacing: 0.04em;
+        }
+        .plan-badge.pro {
+          background: var(--color-primary);
+          color: var(--color-on-primary);
         }
         .sidebar-footer {
           padding: 12px 10px 20px;

@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
-import { Users, Receipt, BarChart3, UserPlus, MoreVertical, Plus, ArrowLeft, X, Eye, Settings, Trash2, Shield, AlertTriangle } from 'lucide-react';
+import { Users, Receipt, BarChart3, UserPlus, MoreVertical, Plus, ArrowLeft, X, Eye, Settings, Trash2, Shield, AlertTriangle, History } from 'lucide-react';
 import AppShell from '../components/layout/AppShell';
 import Button from '../components/ui/Button';
 import NewExpenseModal from '../components/upload/NewExpenseModal';
@@ -8,12 +8,15 @@ import { workspaceService } from '../services/workspaceService';
 import { expenseService } from '../services/expenseService';
 import { useToast } from '../hooks/useToast';
 import { useAuth } from '../context/AuthContext';
+import { isPlanLimitError } from '../services/billingService';
+import { useUpgrade } from '../context/UpgradeContext';
 import Modal from '../components/ui/Modal';
 import { formatCurrency } from '../constants/currencies';
 
 const tabs = [
   { id: 'expenses', label: 'Expenses', icon: <Receipt size={18} /> },
   { id: 'members', label: 'Members', icon: <Users size={18} /> },
+  { id: 'audit', label: 'Audit Log', icon: <History size={18} /> },
   { id: 'summary', label: 'Summary', icon: <BarChart3 size={18} /> },
 ];
 
@@ -38,6 +41,7 @@ export default function WorkspaceView() {
   const [deleteConfirmName, setDeleteConfirmName] = useState('');
   const [deleting, setDeleting] = useState(false);
   const { showToast } = useToast();
+  const { showUpgrade } = useUpgrade();
 
   function fetchExpenses() {
     setExpensesLoading(true);
@@ -51,10 +55,25 @@ export default function WorkspaceView() {
     if (!id) return;
     fetchExpenses();
   }, [id]);
+
+  useEffect(() => {
+    if (activeTab !== 'audit' || !id) return;
+    setAuditLoading(true);
+    workspaceService.auditLog(id)
+      .then((res) => {
+        setAudit(res.data.data || []);
+        setAuditRetentionDays(res.data.retentionDays);
+      })
+      .catch((err) => showToast(err?.response?.data?.error || 'Failed to load audit log', 'error'))
+      .finally(() => setAuditLoading(false));
+  }, [activeTab, id]);
   const [inviteEmail, setInviteEmail] = useState('');
   const [inviteRole, setInviteRole] = useState('member');
   const [inviting, setInviting] = useState(false);
   const [inviteError, setInviteError] = useState('');
+  const [audit, setAudit] = useState([]);
+  const [auditLoading, setAuditLoading] = useState(false);
+  const [auditRetentionDays, setAuditRetentionDays] = useState(null);
 
   async function handleInvite(e) {
     e.preventDefault();
@@ -69,6 +88,11 @@ export default function WorkspaceView() {
       setInviteError('');
       loadWorkspace();
     } catch (err) {
+      if (isPlanLimitError(err)) {
+        setShowInvite(false);
+        showUpgrade(err);
+        return;
+      }
       setInviteError(err?.response?.data?.error || err?.message || 'Failed to invite member');
     } finally {
       setInviting(false);
@@ -186,6 +210,39 @@ export default function WorkspaceView() {
                       </span>
                       <span><Eye size={16} /></span>
                     </Link>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+
+          {activeTab === 'audit' && (
+            <div>
+              <p className="page-sub" style={{ marginBottom: '16px' }}>
+                {auditRetentionDays === null
+                  ? 'Showing the full history of workspace changes.'
+                  : `Showing the last ${auditRetentionDays} days. Upgrade to Pro for full history.`}
+              </p>
+              {auditLoading ? (
+                <div className="loading-state">Loading audit log...</div>
+              ) : audit.length === 0 ? (
+                <div className="empty-state">
+                  <div className="empty-state-icon"><History size={24} /></div>
+                  <h3>No activity yet</h3>
+                  <p>Workspace changes you make will be recorded here.</p>
+                </div>
+              ) : (
+                <div className="data-row-list">
+                  {audit.map((entry) => (
+                    <div key={entry.id} className="data-row-item">
+                      <span className="data-row-col--date">
+                        {new Date(entry.created_at).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                      </span>
+                      <span className="data-row-col--wide data-row-col--merchant">
+                        {entry.action.replace(/[._]/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase())}
+                      </span>
+                      <span></span>
+                    </div>
                   ))}
                 </div>
               )}

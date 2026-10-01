@@ -202,3 +202,57 @@ describe('PATCH /api/workspaces/:id', () => {
     expect(res.status).toBe(403);
   });
 });
+
+describe('GET /api/workspaces/:id/audit-log', () => {
+  it('returns 7 days of history for a free workspace', async () => {
+    kn._push({ ...ws, plan: 'free', paid_until: null });
+    kn._push([{ id: 'a-1', action: 'workspace.updated', created_at: new Date().toISOString() }]);
+
+    const res = await request(app)
+      .get('/api/workspaces/ws-1/audit-log').set(authHeader);
+
+    expect(res.status).toBe(200);
+    expect(res.body.data).toHaveLength(1);
+    expect(res.body.retentionDays).toBe(7);
+  });
+
+  it('returns full history for an active pro workspace', async () => {
+    kn._push({
+      ...ws,
+      plan: 'pro',
+      paid_until: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
+    });
+    kn._push([{ id: 'a-1', action: 'workspace.updated', created_at: new Date().toISOString() }]);
+
+    const res = await request(app)
+      .get('/api/workspaces/ws-1/audit-log').set(authHeader);
+
+    expect(res.status).toBe(200);
+    expect(res.body.retentionDays).toBeNull();
+  });
+
+  it('falls back to the free window once a pro period has lapsed', async () => {
+    kn._push({
+      ...ws,
+      plan: 'pro',
+      paid_until: new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString(),
+    });
+    kn._push([]);
+
+    const res = await request(app)
+      .get('/api/workspaces/ws-1/audit-log').set(authHeader);
+
+    expect(res.status).toBe(200);
+    expect(res.body.retentionDays).toBe(7);
+  });
+
+  it('rejects when the caller has no workspace access', async () => {
+    vi.mocked(accessControl.checkWorkspaceAccess).mockResolvedValueOnce(false);
+    kn._push({ ...ws, plan: 'free' });
+
+    const res = await request(app)
+      .get('/api/workspaces/ws-1/audit-log').set(authHeader);
+
+    expect(res.status).toBe(403);
+  });
+});

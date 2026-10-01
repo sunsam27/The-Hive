@@ -94,14 +94,42 @@ export function proAnnualPriceUsd(): number {
   return numberFromEnv('PRO_ANNUAL_PRICE_USD', PRO_PLAN.annualPriceUsd);
 }
 
-/** The charge is one-time up front, so it must be priced per currency. */
+/**
+ * The charge is one-time up front, so it must be priced per currency. Falling
+ * back to the numeric USD amount would charge someone "39 NGN", so an
+ * unconfigured currency is a hard error rather than a silent discount.
+ */
 export function proAnnualPrice(currency: string = 'USD'): number | null {
   const normalized = String(currency || 'USD').toUpperCase();
   if (normalized === 'USD') return proAnnualPriceUsd();
   const override = process.env[`PRO_ANNUAL_PRICE_${normalized}`];
-  if (override !== undefined) return numberFromEnv(`PRO_ANNUAL_PRICE_${normalized}`, 0);
-  return proAnnualPriceUsd();
+  if (override !== undefined) {
+    const parsed = numberFromEnv(`PRO_ANNUAL_PRICE_${normalized}`, 0);
+    return parsed > 0 ? parsed : null;
+  }
+  return null;
 }
+
+/** Currencies that can actually be charged right now, with their local amounts. */
+export function availablePlanCurrencies(): { code: string; amount: number }[] {
+  const out: { code: string; amount: number }[] = [];
+  for (const code of PLAN_CURRENCY_CODES) {
+    const amount = proAnnualPrice(code);
+    if (amount !== null) out.push({ code, amount });
+  }
+  return out;
+}
+
+export const PLAN_CURRENCY_CODES = [
+  'NGN',
+  'GHS',
+  'KES',
+  'ZAR',
+  'EGP',
+  'USD',
+  'GBP',
+  'EUR',
+] as const;
 
 export function planNameFromEnv(): PlanName {
   return stringFromEnv('DEFAULT_PLAN', 'free') === 'pro' ? 'pro' : 'free';

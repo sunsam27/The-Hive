@@ -9,6 +9,10 @@ export const workspaceService = {
     return api.get(`/workspaces/${id}`);
   },
 
+  auditLog(id, limit = 100) {
+    return api.get(`/workspaces/${id}/audit-log`, { params: { limit } });
+  },
+
   create(data) {
     return api.post('/workspaces', data);
   },

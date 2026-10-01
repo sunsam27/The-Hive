@@ -1,6 +1,6 @@
 import db from '../db/index.js';
 import { numberFromEnv } from '../utils/env.js';
-import { allPlans, proAnnualPrice, proAnnualPriceUsd, planDefinition } from '../config/plans.js';
+import { allPlans, availablePlanCurrencies, proAnnualPrice, proAnnualPriceUsd, planDefinition } from '../config/plans.js';
 import { entitlementFor, resolvePlan } from './entitlements.js';
 import { loadWorkspacePlan, monthlyUsage } from './gate.js';
 
@@ -64,6 +64,9 @@ export function publicPlan(planName: 'free' | 'pro') {
     name: plan.name,
     label: plan.label,
     priceUsd: planName === 'pro' ? proAnnualPriceUsd() : 0,
+    // Only currencies that are actually priced can be charged, so the client
+    // should offer exactly these and show the real local amount.
+    currencies: planName === 'pro' ? availablePlanCurrencies() : [],
     billingPeriodMonths: plan.billingPeriodMonths,
     feeRate: plan.feeRate,
     feeMinimum: plan.feeMinimum,
@@ -87,7 +90,12 @@ export async function billingStatus(workspaceId: string) {
     limits: entitlement.limits,
     usage,
     renewsAt: entitlement.paidUntil,
-    upgrade: { plan: 'pro', priceUsd: proAnnualPriceUsd(), months: renewalMonths() },
+    upgrade: {
+      plan: 'pro',
+      priceUsd: proAnnualPriceUsd(),
+      months: renewalMonths(),
+      currencies: availablePlanCurrencies(),
+    },
   };
 }
 

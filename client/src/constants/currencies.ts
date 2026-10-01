@@ -26,3 +26,20 @@ export function formatCurrency(amount, currencyCode = 'USD') {
   const formatted = (Number(amount) || 0).toFixed(2);
   return `${currency.symbol}${formatted}`;
 }
+
+/**
+ * Currencies offered when buying a plan. The Pro purchase is a one-time charge,
+ * so it can be paid through either provider, and the African currencies are
+ * listed first because Flutterwave is the route that works without a card on
+ * file.
+ */
+export const PLAN_CURRENCIES = [
+  { code: 'NGN', name: 'Nigerian Naira' },
+  { code: 'GHS', name: 'Ghanaian Cedi' },
+  { code: 'KES', name: 'Kenyan Shilling' },
+  { code: 'ZAR', name: 'South African Rand' },
+  { code: 'EGP', name: 'Egyptian Pound' },
+  { code: 'USD', name: 'US Dollar' },
+  { code: 'GBP', name: 'British Pound' },
+  { code: 'EUR', name: 'Euro' },
+];

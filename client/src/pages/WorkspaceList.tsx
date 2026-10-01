@@ -6,6 +6,8 @@ import Button from '../components/ui/Button';
 import Skeleton from '../components/ui/Skeleton';
 import { useToast } from '../hooks/useToast';
 import { workspaceService } from '../services/workspaceService';
+import { isPlanLimitError } from '../services/billingService';
+import { useUpgrade } from '../context/UpgradeContext';
 
 export default function WorkspaceList() {
   const [workspaces, setWorkspaces] = useState([]);
@@ -15,6 +17,7 @@ export default function WorkspaceList() {
   const [creating, setCreating] = useState(false);
 
   const { showToast } = useToast();
+  const { showUpgrade } = useUpgrade();
 
   useEffect(() => {
     workspaceService.list()
@@ -33,7 +36,11 @@ export default function WorkspaceList() {
       setShowCreate(false);
       setForm({ name: '', description: '' });
       showToast('Workspace created', 'success');
-    } catch {
+    } catch (err) {
+      if (isPlanLimitError(err)) {
+        showUpgrade(err);
+        return;
+      }
       showToast('Failed to create workspace', 'error');
     } finally {
       setCreating(false);

@@ -16,6 +16,7 @@ const createSchema = z.object({
 router.get('/', workspaceController.list);
 router.post('/', validate(createSchema), workspaceController.create);
 router.get('/:id', workspaceController.getById);
+router.get('/:id/audit-log', workspaceController.auditLog);
 const updateWorkspaceSchema = z.object({
   name: z.string().min(1).max(100).optional(),
   description: z.string().max(500).optional(),

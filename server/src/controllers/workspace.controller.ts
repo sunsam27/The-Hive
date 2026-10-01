@@ -1,7 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
 import db from '../db/index.js';
 import { checkWorkspaceAccess } from '../utils/accessControl.js';
-import { logAudit } from '../utils/auditLog.js';
+import { logAudit, auditRetentionSince } from '../utils/auditLog.js';
 import { deleteFile } from '../utils/cloudinary.js';
 import { checkMemberCount, checkWorkspaceCount } from '../services/gate.js';
 
@@ -77,6 +77,36 @@ export async function getById(req: Request, res: Response, next: NextFunction) {
       .select('users.id', 'users.name', 'users.email', 'workspace_members.role');
 
     res.json({ ...workspace, members });
+  } catch (err) {
+    next(err);
+  }
+}
+
+export async function auditLog(req: Request, res: Response, next: NextFunction) {
+  try {
+    const id = req.params.id as string;
+    const workspace = await db('workspaces').where({ id }).first();
+    if (!workspace) return res.status(404).json({ error: 'Workspace not found' });
+
+    const hasAccess = await checkWorkspaceAccess(id, req.user!.id);
+    if (!hasAccess) return res.status(403).json({ error: 'Access denied' });
+
+    const limit = Math.min(Number(req.query.limit) || 100, 200);
+    const since = auditRetentionSince(workspace);
+
+    let query = db('audit_log')
+      .where('resource_type', 'workspace')
+      .where('resource_id', id)
+      .orderBy('created_at', 'desc')
+      .limit(limit);
+
+    if (since) query = query.where('created_at', '>=', since.toISOString());
+
+    const entries = await query;
+    res.json({
+      data: entries,
+      retentionDays: since ? Math.round((Date.now() - since.getTime()) / (24 * 60 * 60 * 1000)) : null,
+    });
   } catch (err) {
     next(err);
   }

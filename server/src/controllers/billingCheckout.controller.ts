@@ -17,6 +17,24 @@ import { proAnnualPrice } from '../config/plans.js';
 
 const FRONTEND_URL = process.env.FRONTEND_URL || process.env.CLIENT_URL || 'http://localhost:5173';
 
+/**
+ * A webhook or verification result is only good enough to grant Pro if it paid
+ * the amount and currency we asked for. Anything else is treated as
+ * unconfirmed so a bad event can never hand out a plan for free.
+ */
+function paymentMatchesPurchase(
+  txn: { amount?: number | null; currency?: string | null },
+  purchase: { amount: number; currency: string }
+): boolean {
+  if (typeof txn.amount === 'number' && Math.abs(txn.amount - Number(purchase.amount)) > 0.01) {
+    return false;
+  }
+  if (txn.currency && String(txn.currency).toUpperCase() !== String(purchase.currency).toUpperCase()) {
+    return false;
+  }
+  return true;
+}
+
 function paymentAmounts(fee: FeeBreakdown) {
   return {
     netAmount: fee.netAmount,
@@ -78,7 +96,11 @@ export async function initiateProPurchase(req: Request, res: Response, next: Nex
     // take-rate on selling our own subscription, so gross must equal net.
     const fee = calculateFee(price, { currency, rate: 0, minimum: 0 });
     const description = `Pro annual plan — ${workspace.name}`;
-    const redirectUrl = `${FRONTEND_URL}/workspace/${workspaceId}/billing?payment_status=completed`;
+    // The reference comes back on the return URL so the client can poll for
+    // completion while the webhook is still in flight.
+    const redirectUrl =
+      `${FRONTEND_URL}/workspaces/${workspaceId}/billing` +
+      `?payment_status=completed&reference=${encodeURIComponent(reference)}`;
 
     const session = await provider.createCheckout({
       reference,
@@ -154,6 +176,11 @@ export async function completeProPurchase(req: Request, res: Response, next: Nex
           purchase.provider_ref,
           purchase.provider_transaction_id
         );
+        if (txn.status === 'completed' && !paymentMatchesPurchase(txn, purchase)) {
+          return res.status(409).json({
+            error: 'Payment amount did not match the Pro price. Contact support.',
+          });
+        }
         if (txn.status === 'completed') {
           const activation = await activatePlanPurchase(purchase.id);
           await db('plan_purchases')

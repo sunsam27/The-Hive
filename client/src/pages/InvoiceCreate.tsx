@@ -7,12 +7,15 @@ import { invoiceService } from '../services/invoiceService';
 import { workspaceService } from '../services/workspaceService';
 import { useToast } from '../hooks/useToast';
 import { useAuth } from '../context/AuthContext';
+import { useUpgrade } from '../context/UpgradeContext';
+import { isPlanLimitError } from '../services/billingService';
 import { CURRENCIES } from '../constants/currencies';
 
 export default function InvoiceCreate() {
   const navigate = useNavigate();
   const { user } = useAuth();
   const { showToast } = useToast();
+  const { showUpgrade } = useUpgrade();
   const [workspaces, setWorkspaces] = useState([]);
   const [submitting, setSubmitting] = useState(false);
   const [invoiceId, setInvoiceId] = useState(null);
@@ -76,6 +79,10 @@ export default function InvoiceCreate() {
       setInvoiceId(res.data.id);
       showToast('Invoice created successfully', 'success');
     } catch (err) {
+      if (isPlanLimitError(err)) {
+        showUpgrade(err);
+        return;
+      }
       showToast(err?.response?.data?.error || 'Failed to create invoice', 'error');
     } finally {
       setSubmitting(false);
