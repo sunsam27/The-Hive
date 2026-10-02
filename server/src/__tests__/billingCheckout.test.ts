@@ -293,6 +293,199 @@ describe('GET /api/billing/plans', () => {
   });
 });
 
+/**
+ * Guards a real money bug: both matchers used to compare amount and currency
+ * only when those fields were present, so a provider payload that omitted them
+ * passed verification and granted a paid Pro period for free.
+ */
+describe('payment verification fails closed', () => {
+  const purchase = { amount: 60000, currency: 'NGN' };
+
+  async function loadMatchers() {
+    const { paymentMatchesPurchase } = await import('../controllers/billingCheckout.controller.js');
+    const { planPaymentMatches } = await import('../controllers/payment.controller.js');
+    return { paymentMatchesPurchase, planPaymentMatches };
+  }
+
+  it('accepts a matching amount and currency', async () => {
+    const { paymentMatchesPurchase, planPaymentMatches } = await loadMatchers();
+    const txn = { amount: 60000, currency: 'NGN' };
+
+    expect(paymentMatchesPurchase(txn, purchase)).toBe(true);
+    expect(planPaymentMatches(txn as any, purchase)).toBe(true);
+  });
+
+  it('matches currency case-insensitively', async () => {
+    const { paymentMatchesPurchase, planPaymentMatches } = await loadMatchers();
+    const txn = { amount: 60000, currency: 'ngn' };
+
+    expect(paymentMatchesPurchase(txn, purchase)).toBe(true);
+    expect(planPaymentMatches(txn as any, purchase)).toBe(true);
+  });
+
+  it('rejects a missing amount instead of assuming a match', async () => {
+    const { paymentMatchesPurchase, planPaymentMatches } = await loadMatchers();
+
+    expect(paymentMatchesPurchase({ currency: 'NGN' } as any, purchase)).toBe(false);
+    expect(paymentMatchesPurchase({ amount: null, currency: 'NGN' } as any, purchase)).toBe(false);
+    expect(planPaymentMatches({ currency: 'NGN' } as any, purchase)).toBe(false);
+    expect(planPaymentMatches({ amount: null, currency: 'NGN' } as any, purchase)).toBe(false);
+  });
+
+  it('rejects a NaN amount, which a naive numeric check would wave through', async () => {
+    const { paymentMatchesPurchase, planPaymentMatches } = await loadMatchers();
+    const txn = { amount: NaN, currency: 'NGN' };
+
+    expect(paymentMatchesPurchase(txn, purchase)).toBe(false);
+    expect(planPaymentMatches(txn as any, purchase)).toBe(false);
+  });
+
+  it('rejects a missing currency', async () => {
+    const { paymentMatchesPurchase, planPaymentMatches } = await loadMatchers();
+
+    expect(paymentMatchesPurchase({ amount: 60000 } as any, purchase)).toBe(false);
+    expect(paymentMatchesPurchase({ amount: 60000, currency: null } as any, purchase)).toBe(false);
+    expect(planPaymentMatches({ amount: 60000 } as any, purchase)).toBe(false);
+    expect(planPaymentMatches({ amount: 60000, currency: null } as any, purchase)).toBe(false);
+  });
+
+  it('rejects a short payment and the wrong currency', async () => {
+    const { paymentMatchesPurchase, planPaymentMatches } = await loadMatchers();
+
+    expect(paymentMatchesPurchase({ amount: 1, currency: 'NGN' }, purchase)).toBe(false);
+    expect(paymentMatchesPurchase({ amount: 60000, currency: 'USD' }, purchase)).toBe(false);
+    expect(planPaymentMatches({ amount: 1, currency: 'NGN' } as any, purchase)).toBe(false);
+    expect(planPaymentMatches({ amount: 60000, currency: 'USD' } as any, purchase)).toBe(false);
+  });
+
+  it('tolerates sub-cent rounding from the provider', async () => {
+    const { paymentMatchesPurchase } = await loadMatchers();
+    expect(paymentMatchesPurchase({ amount: 59999.999, currency: 'NGN' }, purchase)).toBe(true);
+  });
+
+  it('surfaces the mismatch to the caller instead of activating', async () => {
+    // The verify endpoint must refuse and leave the purchase unactivated.
+    kn._push({
+      id: 'purchase-1',
+      workspace_id: 'ws-1',
+      purchaser_id: 'owner-1',
+      provider: 'flutterwave',
+      provider_ref: 'FINSYTE-PRO-ws-1-abc',
+      provider_transaction_id: null,
+      status: 'pending',
+      amount: 60000,
+      currency: 'NGN',
+    });
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
+      json: async () => ({
+        status: 'success',
+        // A successful transaction that reports no amount at all.
+        data: [{ id: 77, status: 'successful', currency: 'NGN', created_at: '2026-03-17T00:00:00Z' }],
+      }),
+    }));
+
+    const res = await request(app)
+      .get('/api/billing/checkout/FINSYTE-PRO-ws-1-abc')
+      .set(authHeader);
+
+    expect(res.status).toBe(409);
+  });
+});
+
+describe('checkout race safety', () => {
+  /**
+   * The mock knex is a callable returning one shared builder, so the query
+   * builder can be instrumented directly to observe call order.
+   */
+  function instrument() {
+    const builder: any = (kn as any)('plan_purchases');
+    const state = { inserts: [] as any[], updates: [] as any[], insertsAtProviderCall: -1 };
+    const realInsert = builder.insert;
+    const realUpdate = builder.update;
+
+    builder.insert = (payload: any) => {
+      state.inserts.push(payload);
+      return realInsert(payload);
+    };
+    builder.update = (payload: any) => {
+      state.updates.push(payload);
+      return realUpdate(payload);
+    };
+
+    // The shared builder also carries the audit-log insert, so narrow to the
+    // plan_purchases row.
+    const planInserts = () => state.inserts.filter((i: any) => i?.plan === 'pro');
+
+    return {
+      state,
+      planInserts,
+      restore: () => {
+        builder.insert = realInsert;
+        builder.update = realUpdate;
+      },
+    };
+  }
+
+  it('records the purchase before the provider session is created', async () => {
+    // Ordering matters: a webhook can arrive before a row written afterwards
+    // would exist, and the payment would be dropped with no Pro granted.
+    const probe = instrument();
+    vi.stubGlobal('fetch', vi.fn().mockImplementation(async () => {
+      probe.state.insertsAtProviderCall = probe.planInserts().length;
+      return {
+        json: async () => ({ status: 'success', data: { link: checkoutUrl, id: 77 } }),
+      };
+    }));
+
+    kn._push(workspace);
+    kn._push(user);
+    kn._push([{ id: 'purchase-1' }]);
+    kn._push(undefined);
+
+    try {
+      const res = await request(app)
+        .post('/api/billing/checkout')
+        .set(authHeader)
+        .send({ workspaceId: 'ws-1', currency: 'NGN' });
+
+      expect(res.status).toBe(200);
+      expect(probe.planInserts()).toHaveLength(1);
+      // The row must already exist by the time the provider is contacted.
+      expect(probe.state.insertsAtProviderCall).toBe(1);
+      // ...and the reference must be stored so the webhook can match on it.
+      expect(probe.planInserts()[0].provider_ref).toMatch(/^FINSYTE-PRO-/);
+    } finally {
+      probe.restore();
+    }
+  });
+
+  it('marks the row failed when the provider refuses to create a session', async () => {
+    // Otherwise the reorder leaves an unreachable pending row behind.
+    const probe = instrument();
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
+      json: async () => ({ status: 'error', message: 'unavailable' }),
+    }));
+
+    kn._push(workspace);
+    kn._push(user);
+    kn._push([{ id: 'purchase-1' }]);
+    kn._push(undefined);
+    kn._push(undefined);
+
+    try {
+      const res = await request(app)
+        .post('/api/billing/checkout')
+        .set(authHeader)
+        .send({ workspaceId: 'ws-1', currency: 'NGN' });
+
+      expect(res.status).toBeGreaterThanOrEqual(400);
+      expect(probe.state.updates).toContainEqual({ status: 'failed' });
+    } finally {
+      probe.restore();
+    }
+  });
+});
+
 function feeRateOf(plan: any) {
   return plan.feeRate;
 }

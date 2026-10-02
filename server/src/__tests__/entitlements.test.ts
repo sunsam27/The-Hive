@@ -210,6 +210,40 @@ describe('renewal periods', () => {
   });
 });
 
+describe('periodEnd calendar arithmetic', () => {
+  it('gives an annual plan a full year, not 360 days', () => {
+    const start = new Date('2026-03-17T00:00:00Z');
+    const end = periodEnd(start, 12);
+
+    const days = (end.getTime() - start.getTime()) / (24 * 60 * 60 * 1000);
+    expect(days).toBe(365);
+  });
+
+  it('handles a leap year without drifting a day', () => {
+    expect(periodEnd(new Date('2024-02-29T00:00:00Z'), 12).toISOString())
+      .toBe('2025-02-28T00:00:00.000Z');
+    expect(periodEnd(new Date('2024-01-01T00:00:00Z'), 12).toISOString())
+      .toBe('2025-01-01T00:00:00.000Z');
+  });
+
+  it('clamps month-end instead of overflowing into the next month', () => {
+    expect(periodEnd(new Date('2026-01-31T00:00:00Z'), 1).toISOString())
+      .toBe('2026-02-28T00:00:00.000Z');
+  });
+
+  it('preserves the time of day across a renewal', () => {
+    const start = new Date('2026-06-15T13:45:30Z');
+    expect(periodEnd(start, 12).toISOString()).toBe('2027-06-15T13:45:30.000Z');
+  });
+
+  it('is not affected by the host timezone', () => {
+    // A fixed 30-day month also drifted by wall-clock time. setUTCMonth is
+    // timezone independent, so the result is identical either side of UTC.
+    const start = new Date('2026-01-31T23:30:00Z');
+    expect(periodEnd(start, 1).toISOString()).toBe('2026-02-28T23:30:00.000Z');
+  });
+});
+
 describe('pro pricing', () => {
   it('sells pro as a one-time annual charge', () => {
     expect(proAnnualPriceUsd()).toBe(39);

@@ -22,16 +22,19 @@ const FRONTEND_URL = process.env.FRONTEND_URL || process.env.CLIENT_URL || 'http
  * the amount and currency we asked for. Anything else is treated as
  * unconfirmed so a bad event can never hand out a plan for free.
  */
-function paymentMatchesPurchase(
+export function paymentMatchesPurchase(
   txn: { amount?: number | null; currency?: string | null },
   purchase: { amount: number; currency: string }
 ): boolean {
-  if (typeof txn.amount === 'number' && Math.abs(txn.amount - Number(purchase.amount)) > 0.01) {
-    return false;
-  }
-  if (txn.currency && String(txn.currency).toUpperCase() !== String(purchase.currency).toUpperCase()) {
-    return false;
-  }
+  // Fail closed: an absent amount or currency is not a match. Previously these
+  // were only compared when present, so a provider response that omitted the
+  // total passed verification and granted the paid Pro period.
+  if (typeof txn.amount !== 'number' || !Number.isFinite(txn.amount)) return false;
+  const currency = txn.currency ? String(txn.currency).toUpperCase() : '';
+  if (!currency) return false;
+
+  if (Math.abs(txn.amount - Number(purchase.amount)) > 0.01) return false;
+  if (currency !== String(purchase.currency).toUpperCase()) return false;
   return true;
 }
 
@@ -102,33 +105,53 @@ export async function initiateProPurchase(req: Request, res: Response, next: Nex
       `${FRONTEND_URL}/workspaces/${workspaceId}/billing` +
       `?payment_status=completed&reference=${encodeURIComponent(reference)}`;
 
-    const session = await provider.createCheckout({
-      reference,
-      grossAmount: fee.grossAmount,
-      netAmount: fee.netAmount,
-      platformFee: fee.platformFee,
-      currency,
-      customerEmail: user?.email,
-      customerName: user?.name,
-      description,
-      redirectUrl,
-      destinationAccountId: null,
-    });
-
+    // Record the intent before contacting the provider. The reference is already
+    // generated, so the row can exist up front: a customer can finish paying
+    // before a session row written after the fact would have landed, and the
+    // webhook would then find nothing to match and silently drop the payment.
     const purchaseId = (await db('plan_purchases').insert({
       workspace_id: workspaceId,
       purchaser_id: req.user!.id,
       provider: provider.name,
       provider_ref: reference,
-      provider_transaction_id: session.providerSessionId,
+      provider_transaction_id: null,
       plan: 'pro',
       period_months: renewalMonths(),
       amount: price,
       currency,
       status: 'pending',
-      meta: { checkoutUrl: session.checkoutUrl },
+      meta: {},
     })
       .returning('id')) as any;
+    const purchaseRowId = purchaseId[0]?.id || purchaseId;
+
+    let session: Awaited<ReturnType<typeof provider.createCheckout>>;
+    try {
+      session = await provider.createCheckout({
+        reference,
+        grossAmount: fee.grossAmount,
+        netAmount: fee.netAmount,
+        platformFee: fee.platformFee,
+        currency,
+        customerEmail: user?.email,
+        customerName: user?.name,
+        description,
+        redirectUrl,
+        destinationAccountId: null,
+      });
+    } catch (err) {
+      // Do not leave an unreachable pending row behind for a session that
+      // was never created.
+      await db('plan_purchases').where({ id: purchaseRowId }).update({ status: 'failed' });
+      throw err;
+    }
+
+    await db('plan_purchases')
+      .where({ id: purchaseRowId })
+      .update({
+        provider_transaction_id: session.providerSessionId,
+        meta: { checkoutUrl: session.checkoutUrl },
+      });
 
     await logAudit(db, req.user!.id, 'plan.purchase_initiated', 'workspace', workspaceId, {
       provider: provider.name,
@@ -141,7 +164,7 @@ export async function initiateProPurchase(req: Request, res: Response, next: Nex
       paymentUrl: session.checkoutUrl,
       reference,
       status: 'pending',
-      purchaseId: purchaseId[0]?.id || purchaseId,
+      purchaseId: purchaseRowId,
       amount: price,
       ...paymentAmounts(fee),
     });

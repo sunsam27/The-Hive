@@ -436,7 +436,10 @@ const Sidebar = () => {
           display: none;
           position: fixed;
           top: 12px;
-          left: 12px;
+          /* Right-anchored: at left it sat on top of the drawer's logo once the
+             panel opened. AppShell reserves 60px of top padding on mobile, so
+             this clears the page header and its action buttons. */
+          right: 12px;
           z-index: 200;
           width: 40px;
           height: 40px;

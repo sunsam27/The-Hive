@@ -4,16 +4,30 @@ import { allPlans, availablePlanCurrencies, proAnnualPrice, proAnnualPriceUsd, p
 import { entitlementFor, resolvePlan } from './entitlements.js';
 import { loadWorkspacePlan, monthlyUsage } from './gate.js';
 
-const MS_PER_MONTH = 1000 * 60 * 60 * 24 * 30;
-
 export function renewalMonths(): number {
   return numberFromEnv('PRO_RENEWAL_MONTHS', planDefinition('pro').billingPeriodMonths);
 }
 
-/** Renewal always extends from the later of now and the current paid_until. */
+/**
+ * Calendar-month arithmetic. Using a fixed 30-day month made a 12-month plan run
+ * 360 days, so annual customers were short-changed by about five days a year.
+ *
+ * Day-of-month is clamped rather than allowed to overflow: 31 Jan plus one month
+ * has to land on the last day of February, not spill into March.
+ */
 export function periodEnd(from: Date, months: number): Date {
-  const base = from.getTime();
-  return new Date(base + months * MS_PER_MONTH);
+  const end = new Date(from.getTime());
+  const dayOfMonth = end.getUTCDate();
+
+  end.setUTCDate(1);
+  end.setUTCMonth(end.getUTCMonth() + months);
+
+  const lastDayOfTarget = new Date(
+    Date.UTC(end.getUTCFullYear(), end.getUTCMonth() + 1, 0)
+  ).getUTCDate();
+  end.setUTCDate(Math.min(dayOfMonth, lastDayOfTarget));
+
+  return end;
 }
 
 /**

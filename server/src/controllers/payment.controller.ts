@@ -49,17 +49,34 @@ function paymentAmounts(fee: FeeBreakdown) {
  * Guards against a webhook that settles a different amount or currency than we
  * charged for, which would otherwise hand out a Pro period for free.
  */
-function planPaymentMatches(
+export function planPaymentMatches(
   event: WebhookEvent,
   purchase: { amount: number; currency: string }
 ): boolean {
-  if (typeof event.amount === 'number' && Math.abs(event.amount - Number(purchase.amount)) > 0.01) {
-    return false;
-  }
-  if (event.currency && String(event.currency).toUpperCase() !== String(purchase.currency).toUpperCase()) {
-    return false;
-  }
+  // Fail closed. A missing or non-numeric amount is not a match: without this,
+  // a provider event that omits the total would silently grant Pro. Number.isFinite
+  // also catches NaN, which would otherwise slip through the comparison below.
+  if (typeof event.amount !== 'number' || !Number.isFinite(event.amount)) return false;
+  const currency = event.currency ? String(event.currency).toUpperCase() : '';
+  if (!currency) return false;
+
+  if (Math.abs(event.amount - Number(purchase.amount)) > 0.01) return false;
+  if (currency !== String(purchase.currency).toUpperCase()) return false;
   return true;
+}
+
+/** SQLite returns JSON columns as strings, Postgres as objects. Normalise both. */
+function asMetaObject(meta: unknown): Record<string, unknown> {
+  if (meta && typeof meta === 'object') return meta as Record<string, unknown>;
+  if (typeof meta === 'string') {
+    try {
+      const parsed = JSON.parse(meta);
+      if (parsed && typeof parsed === 'object') return parsed as Record<string, unknown>;
+    } catch {
+      return {};
+    }
+  }
+  return {};
 }
 
 async function resolveRecipient(expense: any, provider: PaymentProvider) {
@@ -329,9 +346,21 @@ export async function handleWebhook(req: Request, res: Response, next: NextFunct
 
         // Only grant the period if the provider says the right money arrived.
         if (!planPaymentMatches(event, planPurchase)) {
+          // Loud, because failing closed also rejects a legitimate payment whose
+          // provider payload simply carried no amount. Without this log that
+          // shows up as a paid customer with no Pro and no obvious cause.
+          console.error(
+            `[payments] Plan purchase ${planPurchase.id} rejected on amount/currency. ` +
+            `received=${JSON.stringify({ amount: event.amount, currency: event.currency })} ` +
+            `expected=${planPurchase.amount} ${planPurchase.currency}`
+          );
           await db('plan_purchases')
             .where({ id: planPurchase.id })
-            .update({ status: 'failed', meta: { reason: 'amount_or_currency_mismatch' } });
+            .update({
+              status: 'failed',
+              // Merge rather than replace: meta also holds the checkout URL.
+              meta: { ...asMetaObject(planPurchase.meta), reason: 'amount_or_currency_mismatch' },
+            });
           return res.status(400).json({ error: 'Plan payment amount did not match the Pro price' });
         }
 

@@ -1,5 +1,8 @@
 import { describe, it, expect, vi } from 'vitest';
 import { render, screen } from '@testing-library/react';
+import { readFileSync } from 'node:fs';
+import { fileURLToPath } from 'node:url';
+import { dirname, resolve } from 'node:path';
 import { MemoryRouter } from 'react-router-dom';
 import Sidebar from '../components/layout/Sidebar';
 import { ThemeProvider } from '../context/ThemeContext';
@@ -38,6 +41,18 @@ function activeLabels(pathname) {
     .filter((el) => el.className.includes('active'))
     .map((el) => el.getAttribute('aria-label'))
     .filter((label) => label && label !== 'Change password');
+}
+
+/**
+ * Reads the real top padding AppShell applies on mobile, so the clearance
+ * assertion stays honest if that value is ever reduced.
+ */
+function readAppShellMobilePadding() {
+  const here = dirname(fileURLToPath(import.meta.url));
+  const source = readFileSync(resolve(here, '../components/layout/AppShell.tsx'), 'utf8');
+  const mobileBlock = source.match(/@media \(max-width: 768px\)\s*\{[\s\S]*?\}/)?.[0] || '';
+  const padding = mobileBlock.match(/padding:\s*(\d+)px/)?.[1];
+  return padding ? Number(padding) : NaN;
 }
 
 function renderSidebar(pathname = '/') {
@@ -188,5 +203,41 @@ describe('sidebar icon treatment', () => {
     const baseSize = base.match(/width:\s*(\d+)px/)?.[1];
     const smallSize = small.match(/width:\s*(\d+)px/)?.[1];
     expect(Number(smallSize)).toBeLessThan(Number(baseSize));
+  });
+});
+
+/**
+ * The expand button used to be anchored top-left, so once the panel opened it
+ * sat directly on top of the drawer's logo. It is anchored to the right now,
+ * which only works because AppShell reserves enough top padding on mobile for
+ * the button to clear the page header.
+ */
+describe('sidebar mobile menu button placement', () => {
+  it('anchors the menu button to the right, not the left', () => {
+    const { styleText } = sidebarStyles();
+    const burger = styleText.match(/\.sidebar-hamburger\s*\{[^}]*\}/)?.[0] || '';
+    expect(burger).toContain('right: 12px');
+    expect(burger).not.toContain('left: 12px');
+  });
+
+  it('keeps the button above the mobile page header instead of over it', () => {
+    const { styleText } = sidebarStyles();
+    const burger = styleText.match(/\.sidebar-hamburger\s*\{[^}]*\}/)?.[0] || '';
+    const top = Number(burger.match(/top:\s*(\d+)px/)?.[1]);
+    const height = Number(burger.match(/height:\s*(\d+)px/)?.[1]);
+
+    // AppShell reserves this much top padding for the button on mobile.
+    const appShell = readAppShellMobilePadding();
+    const buttonBottom = top + height;
+
+    expect(Number.isNaN(top) || Number.isNaN(height) || Number.isNaN(appShell)).toBe(false);
+    expect(buttonBottom).toBeLessThanOrEqual(appShell);
+  });
+
+  it('stacks above the drawer so it can close it', () => {
+    const { styleText } = sidebarStyles();
+    const burger = Number(styleText.match(/\.sidebar-hamburger\s*\{[^}]*z-index:\s*(\d+)/)?.[1]);
+    const drawer = Number(styleText.match(/\.sidebar-mobile\s*\{[^}]*z-index:\s*(\d+)/)?.[1]);
+    expect(burger).toBeGreaterThan(drawer);
   });
 });

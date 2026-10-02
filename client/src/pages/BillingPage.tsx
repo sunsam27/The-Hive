@@ -212,7 +212,9 @@ export default function BillingPage() {
                 ))}
               </select>
 
-              <Button type="button" disabled={busy || verifying} onClick={handleUpgrade}>
+              // Disabled when no price is known: the server rejects an unpriced currency,
+              // so the button must not pretend the purchase can go through.
+              <Button type="button" disabled={busy || verifying || selectedPrice === null} onClick={handleUpgrade}>
                 <CreditCard size={16} aria-hidden="true" />
                 {verifying ? 'Confirming payment...' : busy ? 'Opening checkout...' : selectedPrice === null ? 'Select a currency' : `Pay ${currency} ${selectedPrice} for Pro`}
               </Button>
