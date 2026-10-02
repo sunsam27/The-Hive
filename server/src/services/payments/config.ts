@@ -1,4 +1,5 @@
 import { allProviders } from './registry.js';
+import { PLAN_CURRENCY_CODES, proAnnualPrice } from '../../config/plans.js';
 
 export interface PaymentConfigIssue {
   level: 'error' | 'warning';
@@ -32,6 +33,16 @@ export function looksLikePlaceholder(value: string): boolean {
 
 export function webhookSecretVar(providerName: string): string {
   return ENV_VARS[providerName]?.webhookSecret ?? `${providerName.toUpperCase()}_WEBHOOK_SECRET`;
+}
+
+/**
+ * Test-mode keys never move real money, but everything else in the flow looks
+ * like it worked. Left in production a customer can "pay" and be granted Pro for
+ * free, which is far worse than a hard failure because nothing looks broken.
+ */
+function looksLikeTestKey(value: string): boolean {
+  const trimmed = value.trim();
+  return /_TEST[-_]/i.test(trimmed) || /^(sk|pk|rk)_test_/i.test(trimmed);
 }
 
 export function checkPaymentConfig(): PaymentConfigIssue[] {
@@ -80,6 +91,33 @@ export function checkPaymentConfig(): PaymentConfigIssue[] {
           `verification and payments will never be confirmed.`,
       });
     }
+
+    if (secretKey && looksLikeTestKey(secretKey)) {
+      issues.push({
+        level: process.env.NODE_ENV === 'production' ? 'error' : 'warning',
+        provider: provider.name,
+        message:
+          `${vars.secretKey} is a TEST key. ${provider.name} will complete checkouts and fire webhooks but ` +
+          `no real money moves, so Pro would be granted without payment. ` +
+          `Swap in live keys before taking payments.` +
+          (process.env.NODE_ENV === 'production' ? ' THIS IS RUNNING IN PRODUCTION.' : ''),
+      });
+    }
+  }
+
+  // A currency with no configured price fails closed at checkout, which is safe
+  // but reads as a random 400 to the customer. Surface it at boot instead.
+  const unpriced = PLAN_CURRENCY_CODES.filter(
+    (code) => code !== 'USD' && proAnnualPrice(code) === null
+  );
+  if (unpriced.length > 0) {
+    issues.push({
+      level: 'warning',
+      provider: 'plans',
+      message:
+        `No Pro price configured for ${unpriced.join(', ')}. Checkout rejects these with a 400 rather ` +
+        `than charging the USD amount. Set PRO_ANNUAL_PRICE_<CODE> to open those markets.`,
+    });
   }
 
   return issues;

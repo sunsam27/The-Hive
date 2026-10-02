@@ -10,7 +10,7 @@
     "migrate": "tsx --import dotenv/config -e \"import db from './src/db/index.ts'; db.migrate.latest().then(() => { console.log('Migrations complete'); process.exit(0); }).catch(e => { console.error(e); process.exit(1); });\"",
     "seed": "tsx --import dotenv/config -e \"import db from './src/db/index.ts'; db.seed.run().then(() => { console.log('Seeds complete'); process.exit(0); }).catch(e => { console.error(e); process.exit(1); });\"",
     "lint": "eslint .",
-    "test": "vitest run"
+    "test": "node ../scripts/verify-tests.mjs 9"
   },
   "dependencies": {
     "@getbrevo/brevo": "^2.5.0",
