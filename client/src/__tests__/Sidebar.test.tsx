@@ -1,4 +1,4 @@
-import { describe, it, expect, vi } from 'vitest';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
@@ -17,9 +17,23 @@ vi.mock('../context/AuthContext', () => ({
   useAuth: () => ({ user: { name: 'Ada', avatar_url: null }, logout: vi.fn() }),
 }));
 
+// Mutable so a test can simulate "no workspace selected yet". The persisted
+// billing workspace is null on a fresh browser, which is when the Plan & Billing
+// link used to collide with the Workspaces link.
+let mockWorkspaceId: string | null = 'ws-1';
+
 vi.mock('../context/BillingContext', () => ({
-  useBilling: () => ({ workspaceId: 'ws-1', isPro: false, status: null, refresh: vi.fn() }),
+  useBilling: () => ({
+    workspaceId: mockWorkspaceId,
+    isPro: false,
+    status: null,
+    refresh: vi.fn(),
+  }),
 }));
+
+beforeEach(() => {
+  mockWorkspaceId = 'ws-1';
+});
 
 /**
  * Billing is nested under /workspaces. NavLink counts a path as active for all
@@ -98,6 +112,31 @@ describe('sidebar active state', () => {
     const labels = activeLabels('/workspaces/ws-1/billing');
     expect(labels).not.toContain('Workspaces');
     expect(labels).toHaveLength(1);
+  });
+
+  it('highlights only Workspaces when no workspace is selected yet', () => {
+    // Regression: the billing link fell back to '/workspaces', which is the
+    // Workspaces nav path, so both were active at once on a fresh browser.
+    mockWorkspaceId = null;
+    expect(activeLabels('/workspaces')).toEqual(['Workspaces']);
+  });
+
+  it('does not render a billing link with nothing to bill', () => {
+    mockWorkspaceId = null;
+    renderSidebar('/workspaces');
+    expect(screen.queryByLabelText('Plan & Billing')).toBeNull();
+  });
+
+  it('uses the workspace in the URL over the stale one in localStorage', () => {
+    mockWorkspaceId = 'ws-9';
+    renderSidebar('/workspaces/ws-1/billing');
+    const link = screen.getByLabelText('Plan & Billing');
+    expect(link.getAttribute('href')).toBe('/workspaces/ws-1/billing');
+  });
+
+  it('still highlights only Plan & Billing when localStorage is stale', () => {
+    mockWorkspaceId = 'ws-9';
+    expect(activeLabels('/workspaces/ws-1/billing')).toEqual(['Plan & Billing']);
   });
 });
 

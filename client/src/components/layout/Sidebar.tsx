@@ -81,7 +81,16 @@ const Sidebar = () => {
     { name: 'Payout Accounts', icon: <Landmark size={17} />, path: '/settings/payouts' },
   ];
 
-  const billingPath = workspaceId ? `/workspaces/${workspaceId}/billing` : '/workspaces';
+  // Prefer the workspace in the URL over the one persisted in localStorage.
+  // The stored value is whatever was last selected, so it goes stale the moment
+  // you open a different workspace and the link would point somewhere else.
+  const workspaceFromUrl = location.pathname.match(/^\/workspaces\/([^/]+)/)?.[1];
+  const billingWorkspaceId = workspaceFromUrl || workspaceId;
+
+  // Billing is per-workspace, so with no workspace there is nothing to link to.
+  // It used to fall back to '/workspaces', which is the same path as the
+  // Workspaces nav item, and both lit up at once.
+  const billingPath = billingWorkspaceId ? `/workspaces/${billingWorkspaceId}/billing` : null;
 
   // Billing lives under /workspaces, and NavLink treats a path as active for
   // every deeper route too, so the Workspaces link would light up on the billing
@@ -119,22 +128,24 @@ const Sidebar = () => {
             <span className="nav-label">{item.name}</span>
           </NavLink>
         ))}
-        <NavLink
-          to={billingPath}
-          end
-          className={({ isActive }) => `nav-link ${isActive || isBillingRoute ? 'active' : ''}`}
-          onClick={handleNavClick}
-          aria-label="Plan & Billing"
-        >
-          <span className="nav-icon" aria-hidden="true"><Sparkles size={17} /></span>
-          <span className="nav-label">Plan &amp; Billing</span>
-          {!isPro && (
-            <span className="plan-badge">Free</span>
-          )}
-          {isPro && (
-            <span className="plan-badge pro">Pro</span>
-          )}
-        </NavLink>
+        {billingPath && (
+          <NavLink
+            to={billingPath}
+            end
+            className={({ isActive }) => `nav-link ${isActive || isBillingRoute ? 'active' : ''}`}
+            onClick={handleNavClick}
+            aria-label="Plan & Billing"
+          >
+            <span className="nav-icon" aria-hidden="true"><Sparkles size={17} /></span>
+            <span className="nav-label">Plan &amp; Billing</span>
+            {!isPro && (
+              <span className="plan-badge">Free</span>
+            )}
+            {isPro && (
+              <span className="plan-badge pro">Pro</span>
+            )}
+          </NavLink>
+        )}
       </nav>
 
       <div className="sidebar-footer">
