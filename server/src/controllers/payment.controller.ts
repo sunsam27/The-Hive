@@ -5,6 +5,7 @@ import { logAudit } from '../utils/auditLog.js';
 import {
   PaymentProviderUnavailableError,
   calculateFee,
+  currencyCapabilities,
   generatePaymentReference,
   getProvider,
   isPlanReference,
@@ -153,7 +154,15 @@ export async function initiate(req: Request, res: Response, next: NextFunction) 
     }
 
     if (!provider.isConfigured()) {
-      return res.status(503).json({ error: 'Payment service is not configured' });
+      return res.status(503).json({
+        error: `Payment service is not configured for ${currency}`,
+        currency,
+        provider: provider.name,
+        hint:
+          provider.name === 'stripe'
+            ? 'Stripe keys are not set on this environment.'
+            : 'Flutterwave keys are not set on this environment.',
+      });
     }
 
     const existingPayment = await db('payments')
@@ -392,4 +401,8 @@ export async function handleWebhook(req: Request, res: Response, next: NextFunct
   } catch (err) {
     next(err);
   }
+}
+
+export function capabilities(_req: Request, res: Response) {
+  res.json({ currencies: currencyCapabilities() });
 }

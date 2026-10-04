@@ -60,8 +60,9 @@ const { default: app } = await import('../app.js');
 const accessControl = await import('../utils/accessControl.js');
 const { checkPaymentConfig } = await import('../services/payments/config.js');
 const { calculateFee } = await import('../services/payments/fees.js');
-const { resolveProvider } = await import('../services/payments/registry.js');
+const { resolveProvider, currencyCapabilities } = await import('../services/payments/registry.js');
 const { flutterwaveProvider } = await import('../services/payments/flutterwave.provider.js');
+const { stripeProvider } = await import('../services/payments/stripe.provider.js');
 
 const kn = (await import('../db/index.js')).default as any;
 const token = jwt.sign({ userId: 'user-1' }, process.env.JWT_SECRET!, { expiresIn: '1h' });
@@ -354,6 +355,66 @@ describe('provider routing', () => {
     process.env.PLATFORM_DEFAULT_PROVIDER = 'flutterwave';
     expect(resolveProvider('USD').name).toBe('flutterwave');
     delete process.env.PLATFORM_DEFAULT_PROVIDER;
+  });
+});
+
+describe('currency capabilities', () => {
+  it('reports the provider that resolveProvider will actually use', () => {
+    const caps = currencyCapabilities();
+    const byCode = new Map(caps.map((c) => [c.code, c]));
+
+    // USD is claimed by both providers. It must be attributed to stripe,
+    // because that is where resolveProvider sends it.
+    expect(byCode.get('USD')?.provider).toBe(resolveProvider('USD').name);
+    expect(byCode.get('NGN')?.provider).toBe('flutterwave');
+    expect(byCode.get('EUR')?.provider).toBe('stripe');
+  });
+
+  it('agrees with resolveProvider for every currency it reports', () => {
+    for (const cap of currencyCapabilities()) {
+      expect(cap.provider).toBe(resolveProvider(cap.code).name);
+    }
+  });
+
+  it('exposes every currency either provider claims', () => {
+    const codes = currencyCapabilities().map((c) => c.code);
+    for (const code of flutterwaveProvider.routedCurrencies) expect(codes).toContain(code);
+    for (const code of stripeProvider.routedCurrencies) expect(codes).toContain(code);
+  });
+
+  it('groups african currencies apart from international ones', () => {
+    const byCode = new Map(currencyCapabilities().map((c) => [c.code, c]));
+    expect(byCode.get('NGN')?.group).toBe('africa');
+    expect(byCode.get('USD')?.group).toBe('international');
+  });
+
+  it('marks a currency unavailable when its provider has no keys', () => {
+    delete process.env.STRIPE_SECRET_KEY;
+    const usd = currencyCapabilities().find((c) => c.code === 'USD');
+    expect(usd?.available).toBe(false);
+    expect(usd?.provider).toBe('stripe');
+
+    const ngn = currencyCapabilities().find((c) => c.code === 'NGN');
+    expect(ngn?.available).toBe(true);
+  });
+
+  it('is reachable through the authenticated capabilities route', async () => {
+    const res = await request(app).get('/api/payments/capabilities').set('Authorization', `Bearer ${token}`);
+    expect(res.status).toBe(200);
+
+    const codes = res.body.currencies.map((c: any) => c.code);
+    expect(codes).toContain('NGN');
+    expect(codes).toContain('USD');
+    for (const cap of res.body.currencies) {
+      expect(cap).toHaveProperty('available');
+      expect(cap).toHaveProperty('provider');
+      expect(cap).toHaveProperty('group');
+    }
+  });
+
+  it('requires authentication to read capabilities', async () => {
+    const res = await request(app).get('/api/payments/capabilities');
+    expect(res.status).toBe(401);
   });
 });
 

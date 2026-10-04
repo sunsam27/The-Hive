@@ -1,0 +1,208 @@
+.currency-picker {
+  position: relative;
+  width: 100%;
+}
+
+.currency-picker-trigger {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  min-height: 46px;
+  padding: 8px 12px;
+  border-radius: 12px;
+  border: 1.5px solid var(--color-outline-variant);
+  background: var(--color-surface);
+  color: var(--color-on-surface);
+  font-family: 'Space Grotesk', sans-serif;
+  cursor: pointer;
+  text-align: left;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.currency-picker-trigger:hover:not(.is-disabled) {
+  border-color: var(--color-outline);
+}
+
+.currency-picker-trigger:focus-visible,
+.currency-picker-trigger.is-open {
+  outline: none;
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 3px rgba(5, 191, 200, 0.18);
+}
+
+.currency-picker-trigger.is-disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.currency-picker-value {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  min-width: 0;
+  flex: 1;
+}
+
+.currency-picker-code {
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+}
+
+.currency-picker-name {
+  font-size: 11px;
+  color: var(--color-on-surface-variant);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.currency-picker-warn {
+  flex-shrink: 0;
+  padding: 2px 7px;
+  border-radius: 999px;
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: hsl(4, 72%, 41%);
+  background: hsl(4, 72%, 95%);
+}
+
+.currency-picker-chevron {
+  flex-shrink: 0;
+  color: var(--color-on-surface-variant);
+  transition: transform 0.15s ease;
+}
+
+.currency-picker-trigger.is-open .currency-picker-chevron {
+  transform: rotate(180deg);
+}
+
+.currency-picker-panel {
+  position: absolute;
+  z-index: 60;
+  top: calc(100% + 6px);
+  left: 0;
+  width: 100%;
+  min-width: 260px;
+  border-radius: 14px;
+  border: 1.5px solid var(--color-outline-variant);
+  background: var(--color-surface-container-lowest);
+  box-shadow: 0 18px 40px rgba(15, 23, 42, 0.18);
+  overflow: hidden;
+}
+
+.currency-picker-search {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--color-outline-variant);
+  color: var(--color-on-surface-variant);
+}
+
+.currency-picker-search input {
+  flex: 1;
+  min-width: 0;
+  border: none;
+  outline: none;
+  background: transparent;
+  color: var(--color-on-surface);
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 13px;
+}
+
+.currency-picker-search button {
+  display: flex;
+  border: none;
+  background: none;
+  cursor: pointer;
+  color: inherit;
+  padding: 0;
+}
+
+.currency-picker-list {
+  max-height: 288px;
+  overflow-y: auto;
+  padding: 6px;
+}
+
+.currency-picker-group + .currency-picker-group {
+  margin-top: 6px;
+}
+
+.currency-picker-group-label {
+  padding: 6px 8px 4px;
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--color-on-surface-variant);
+}
+
+.currency-picker-option {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 8px;
+  border: none;
+  border-radius: 9px;
+  background: transparent;
+  color: var(--color-on-surface);
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 13px;
+  text-align: left;
+  cursor: pointer;
+}
+
+.currency-picker-option:hover:not(:disabled) {
+  background: var(--color-surface-container-low);
+}
+
+.currency-picker-option.is-selected {
+  background: var(--color-primary-container);
+  font-weight: 700;
+}
+
+.currency-picker-option.is-unavailable {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.currency-picker-option-code {
+  flex-shrink: 0;
+  min-width: 38px;
+  font-weight: 700;
+  font-size: 12px;
+  letter-spacing: 0.02em;
+}
+
+.currency-picker-option-name {
+  flex: 1;
+  min-width: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-weight: 500;
+}
+
+.currency-picker-option-symbol {
+  flex-shrink: 0;
+  font-size: 12px;
+  color: var(--color-on-surface-variant);
+}
+
+.currency-picker-option-tag {
+  flex-shrink: 0;
+  padding: 2px 6px;
+  border-radius: 999px;
+  font-size: 9px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  color: var(--color-on-surface-variant);
+  background: var(--color-surface-dim);
+}

@@ -1,11 +1,12 @@
 import { useState } from 'react';
-import { ChevronDown } from 'lucide-react';
 import Modal from '../ui/Modal';
 import Input from '../ui/Input';
 import Button from '../ui/Button';
+import CurrencySelect from '../ui/CurrencySelect';
+import '../ui/CurrencySelect.css';
 import { expenseService } from '../../services/expenseService';
 import { useToast } from '../../hooks/useToast';
-import { CURRENCIES } from '../../constants/currencies';
+import { useCurrencies } from '../../hooks/useCurrencies';
 
 const EditExpenseModal = ({ isOpen, onClose, expense, onSaved }) => {
   const [merchant, setMerchant] = useState(expense?.merchant || '');
@@ -18,6 +19,7 @@ const EditExpenseModal = ({ isOpen, onClose, expense, onSaved }) => {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
   const { showToast } = useToast();
+  const { options: currencyOptions, loading: currenciesLoading } = useCurrencies();
 
   async function handleSave(e) {
     e.preventDefault();
@@ -53,16 +55,15 @@ const EditExpenseModal = ({ isOpen, onClose, expense, onSaved }) => {
 
         <div className="row" style={{ display: 'flex', gap: 16 }}>
           <Input label="Merchant" value={merchant} onChange={(e) => setMerchant(e.target.value)} className="col" />
-          <div className="currency-select-wrap" style={{ width: 140 }}>
+          <div className="currency-select-wrap" style={{ width: 180 }}>
             <label className="input-label">Currency</label>
-            <div className="currency-select-inner">
-              <select className="currency-select" value={currency} onChange={(e) => setCurrency(e.target.value)}>
-                {CURRENCIES.map((c) => (
-                   <option key={c.code} value={c.code}>{c.flag} {c.code} — {c.symbol}</option>
-                ))}
-              </select>
-              <ChevronDown size={16} className="currency-select-chevron" />
-            </div>
+            <CurrencySelect
+              id="edit-expense-currency"
+              value={currency}
+              options={currencyOptions}
+              onChange={setCurrency}
+              loading={currenciesLoading}
+            />
           </div>
         </div>
 

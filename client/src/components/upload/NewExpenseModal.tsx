@@ -1,15 +1,17 @@
 import { useState } from 'react';
 import { useForm } from 'react-hook-form';
-import { Upload, FileText, AlertCircle, X, Plus, ChevronDown } from 'lucide-react';
+import { Upload, FileText, AlertCircle, X, Plus } from 'lucide-react';
 import Modal from '../ui/Modal';
 import Input from '../ui/Input';
 import Button from '../ui/Button';
+import CurrencySelect from '../ui/CurrencySelect';
+import '../ui/CurrencySelect.css';
 import { processReceipt } from '../../services/ocrService';
 import { expenseService } from '../../services/expenseService';
 import { useToast } from '../../hooks/useToast';
+import { useCurrencies } from '../../hooks/useCurrencies';
 import { isPlanLimitError } from '../../services/billingService';
 import { useUpgrade } from '../../context/UpgradeContext';
-import { CURRENCIES } from '../../constants/currencies';
 
 const PRESET_TAGS = ['Travel', 'Ads', 'Software', 'Office Supplies'];
 
@@ -25,6 +27,7 @@ const NewExpenseModal = ({ isOpen, onClose, workspaceId }) => {
   const [submitting, setSubmitting] = useState(false);
   const { showToast } = useToast();
   const { showUpgrade } = useUpgrade();
+  const { options: currencyOptions, loading: currenciesLoading } = useCurrencies();
   const { register, handleSubmit, setValue, reset, formState: { errors } } = useForm();
 
   const handleFileChange = async (e) => {
@@ -169,18 +172,13 @@ const NewExpenseModal = ({ isOpen, onClose, workspaceId }) => {
             />
             <div className="currency-select-wrap">
               <label className="input-label">Currency</label>
-              <div className="currency-select-inner">
-                <select
-                  className="currency-select"
-                  value={currency}
-                  onChange={(e) => setCurrency(e.target.value)}
-                >
-                  {CURRENCIES.map((c) => (
-                    <option key={c.code} value={c.code}>{c.flag} {c.code} — {c.symbol}</option>
-                  ))}
-                </select>
-                <ChevronDown size={16} className="currency-select-chevron" />
-              </div>
+              <CurrencySelect
+                id="new-expense-currency"
+                value={currency}
+                options={currencyOptions}
+                onChange={setCurrency}
+                loading={currenciesLoading}
+              />
             </div>
           </div>
 

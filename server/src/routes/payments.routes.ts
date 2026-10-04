@@ -8,6 +8,7 @@ const router = Router();
 router.post('/webhook/:provider', paymentController.handleWebhook);
 
 router.use(authenticate);
+router.get('/capabilities', paymentController.capabilities);
 router.post('/initiate', paymentController.initiate);
 router.get('/verify/:reference', paymentController.verify);
 
