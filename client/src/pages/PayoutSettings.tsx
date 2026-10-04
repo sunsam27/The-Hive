@@ -41,6 +41,7 @@ export default function PayoutSettings() {
     accountBank: '',
     accountNumber: '',
     businessName: '',
+    businessEmail: '',
     country: '',
     businessMobile: '',
   });
@@ -98,7 +99,7 @@ export default function PayoutSettings() {
     try {
       const res = await paymentService.addFlutterwaveSubaccount(form);
       showToast('Payout account added', 'success');
-      setForm({ accountBank: '', accountNumber: '', businessName: '', country: '', businessMobile: '' });
+      setForm({ accountBank: '', accountNumber: '', businessName: '', businessEmail: '', country: '', businessMobile: '' });
       load();
       if (res.data.disclosure) setDisclosures((d) => ({ ...d, flutterwave: res.data.disclosure }));
     } catch (err) {
@@ -250,6 +251,17 @@ export default function PayoutSettings() {
                         style={inputStyle}
                         value={form.businessName}
                         onChange={(e) => setForm({ ...form, businessName: e.target.value })}
+                        required
+                      />
+                    </div>
+                    <div>
+                      <label style={labelStyle} htmlFor="businessEmail">Business email</label>
+                      <input
+                        id="businessEmail"
+                        style={inputStyle}
+                        type="email"
+                        value={form.businessEmail}
+                        onChange={(e) => setForm({ ...form, businessEmail: e.target.value })}
                         required
                       />
                     </div>

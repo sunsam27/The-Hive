@@ -66,6 +66,7 @@ export interface FlutterwaveSubaccountInput {
   accountBank: string;
   accountNumber: string;
   businessName: string;
+  businessEmail: string;
   country: string;
   businessMobile: string;
   splitType?: 'percentage' | 'flat';
@@ -285,6 +286,10 @@ export async function createFlutterwaveSubaccount(
     accountBank: String(input.accountBank || '').trim(),
     accountNumber: String(input.accountNumber || '').trim(),
     businessName: String(input.businessName || '').trim(),
+    // Flutterwave rejects the whole subaccount with
+    // "business_email is required" unless this is present, so it is validated
+    // and sent rather than left optional.
+    businessEmail: String(input.businessEmail || '').trim(),
     country: String(input.country || '').trim().toUpperCase(),
     businessMobile: String(input.businessMobile || '').trim(),
   };
@@ -293,6 +298,7 @@ export async function createFlutterwaveSubaccount(
     accountBank: 'Bank code',
     accountNumber: 'Account number',
     businessName: 'Business name',
+    businessEmail: 'Business email',
     country: 'Country',
     businessMobile: 'Business phone',
   };
@@ -316,6 +322,7 @@ export async function createFlutterwaveSubaccount(
       account_bank: fields.accountBank,
       account_number: fields.accountNumber,
       business_name: fields.businessName,
+      business_email: fields.businessEmail,
       country: fields.country,
       business_mobile: fields.businessMobile,
       split_type: splitType,

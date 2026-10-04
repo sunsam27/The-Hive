@@ -222,6 +222,7 @@ describe('flutterwave subaccounts', () => {
       accountBank: '044',
       accountNumber: '0690000037',
       businessName: 'Ada Freelance',
+      businessEmail: 'ada@adafreelance.ng',
       country: 'NG',
       businessMobile: '08000010100',
     });
@@ -246,6 +247,7 @@ describe('flutterwave subaccounts', () => {
         accountBank: '044',
         accountNumber: '0690000037',
         businessName: 'Ada',
+        businessEmail: 'ada@example.com',
         country: 'NG',
         businessMobile: '08000010100',
       })
@@ -270,6 +272,7 @@ describe('flutterwave subaccounts', () => {
         accountBank: '044',
         accountNumber: '0690000037',
         businessName: 'Ada',
+        businessEmail: 'ada@example.com',
         country: 'NG',
         businessMobile: '08000010100',
       })
@@ -282,6 +285,7 @@ describe('flutterwave subaccounts', () => {
         accountBank: '044',
         accountNumber: '   ',
         businessName: 'Ada',
+        businessEmail: 'ada@example.com',
         country: 'NG',
         businessMobile: '08000010100',
       })
@@ -294,10 +298,76 @@ describe('flutterwave subaccounts', () => {
         accountBank: '044',
         accountNumber: '0690000037',
         businessName: 'Ada',
+        businessEmail: 'ada@example.com',
         country: 'NG',
         businessMobile: '  ',
       })
-    ).rejects.toMatchObject({ status: 400, message: 'Business phone is required' });
+).rejects.toMatchObject({ status: 400, message: 'Business phone is required' });
+  });
+
+  // Regression: Flutterwave rejects POST /v3/subaccounts with
+  // "business_email is required" when the field is absent, so the request 400s
+  // and the freelancer never gets a receiving account.
+  it('rejects a missing business email before calling flutterwave', async () => {
+    const fetchMock = vi.fn();
+    vi.stubGlobal('fetch', fetchMock);
+
+    await expect(
+      svc.createFlutterwaveSubaccount('user-1', {
+        accountBank: '044',
+        accountNumber: '0690000037',
+        businessName: 'Ada',
+        businessEmail: '   ',
+        country: 'NG',
+        businessMobile: '08000010100',
+      })
+    ).rejects.toMatchObject({ status: 400, message: 'Business email is required' });
+
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  it('sends business_email to flutterwave', async () => {
+    const fetchMock = vi.fn().mockResolvedValue({
+      json: async () => ({
+        status: 'success',
+        data: {
+          subaccount_id: 'RS_email',
+          bank_name: 'ACCESS BANK NIGERIA',
+          account_bank: '044',
+        },
+      }),
+    });
+    vi.stubGlobal('fetch', fetchMock);
+    queued.push(undefined);
+    queued.push([
+      {
+        id: 'pa-9',
+        user_id: 'user-1',
+        provider: 'flutterwave',
+        provider_account_id: 'RS_email',
+        status: 'active',
+        details_submitted: true,
+        charges_enabled: true,
+        payouts_enabled: true,
+        business_name: 'Ada',
+        display_label: 'ACCESS BANK NIGERIA ending 0037',
+        meta: { account_last4: '0037' },
+        created_at: '2026-06-01T00:00:00.000Z',
+        updated_at: '2026-06-01T00:00:00.000Z',
+      },
+    ]);
+
+    await svc.createFlutterwaveSubaccount('user-1', {
+      accountBank: '044',
+      accountNumber: '0690000037',
+      businessName: 'Ada',
+      businessEmail: 'ada@example.com',
+      country: 'NG',
+      businessMobile: '08000010100',
+    });
+
+    const [, args] = fetchMock.mock.calls[0] as any;
+    expect(JSON.parse(args.body).business_email).toBe('ada@example.com');
   });
 
   it('normalises country and trims the required fields before sending', async () => {
@@ -337,6 +407,7 @@ describe('flutterwave subaccounts', () => {
       accountBank: ' 044 ',
       accountNumber: ' 0690000037 ',
       businessName: ' Ada Ltd ',
+      businessEmail: ' ada@adaltd.ng ',
       country: 'ng',
       businessMobile: ' 08000010100 ',
     });
