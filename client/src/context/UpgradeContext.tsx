@@ -2,6 +2,7 @@ import { useEffect, useState, createContext, useContext, useCallback } from 'rea
 import { X, Sparkles, ArrowRight } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useBilling } from '../context/BillingContext';
+import { useToast } from '../hooks/useToast';
 import { planLimitDetails } from '../services/billingService';
 
 const UpgradeContext = createContext(null);
@@ -14,9 +15,12 @@ const METRIC_LABEL = {
 export function UpgradeProvider({ children }) {
   const [prompt, setPrompt] = useState(null);
 
-  const showUpgrade = useCallback((err) => {
+  // Pass the workspace the limit was hit in. Without it the prompt falls back
+  // to whatever workspace was last billed, which is usually none, and the CTA
+  // ends up navigating to the page the user is already on.
+  const showUpgrade = useCallback((err, workspaceId) => {
     const details = planLimitDetails(err);
-    if (details) setPrompt(details);
+    if (details) setPrompt({ ...details, workspaceId: workspaceId ?? null });
   }, []);
 
   return (
@@ -37,6 +41,7 @@ function UpgradePromptCard() {
   const { prompt, dismiss } = useUpgrade();
   const navigate = useNavigate();
   const { workspaceId } = useBilling();
+  const { showToast } = useToast();
 
   useEffect(() => {
     if (!prompt) return undefined;
@@ -48,6 +53,21 @@ function UpgradePromptCard() {
   if (!prompt) return null;
 
   const label = METRIC_LABEL[prompt.metric] || 'items';
+  // Prefer the workspace the limit was actually hit in, then the one already
+  // selected, and only then fall back to the list.
+  const target = prompt.workspaceId || workspaceId;
+  const hasTarget = Boolean(target);
+
+  function goToUpgrade() {
+    dismiss();
+    if (hasTarget) {
+      navigate(`/workspaces/${target}/billing`);
+      return;
+    }
+    // Never close and silently stay put: say why we are sending them here.
+    showToast('Open a workspace, then choose Plan & billing to upgrade.', 'info');
+    navigate('/workspaces');
+  }
 
   return (
     <div className="upgrade-overlay" role="presentation" onClick={dismiss}>
@@ -80,10 +100,7 @@ function UpgradePromptCard() {
           <button
             type="button"
             className="upgrade-cta"
-            onClick={() => {
-              dismiss();
-              navigate(workspaceId ? `/workspaces/${workspaceId}/billing` : '/workspaces');
-            }}
+            onClick={goToUpgrade}
           >
             Upgrade to Pro <ArrowRight size={16} aria-hidden="true" />
           </button>

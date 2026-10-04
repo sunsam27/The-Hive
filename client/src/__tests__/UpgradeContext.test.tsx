@@ -11,6 +11,13 @@ vi.mock('../context/BillingContext', () => ({
   useBilling: () => ({ workspaceId: 'ws-1' }),
 }));
 
+// The prompt card tells the user where to go when it has no workspace to bill,
+// so it needs the toast. Mocked here because this suite deliberately renders
+// UpgradeProvider without the app's full provider stack.
+vi.mock('../hooks/useToast', () => ({
+  useToast: () => ({ showToast: vi.fn() }),
+}));
+
 /**
  * Regression test: UpgradeProvider renders UpgradePromptCard above <App />, and
  * that card calls useNavigate(). If a provider is ever moved outside the

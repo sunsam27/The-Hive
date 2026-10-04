@@ -10,6 +10,7 @@ import { useToast } from '../hooks/useToast';
 import { useAuth } from '../context/AuthContext';
 import { isPlanLimitError } from '../services/billingService';
 import { useUpgrade } from '../context/UpgradeContext';
+import { useBilling } from '../context/BillingContext';
 import Modal from '../components/ui/Modal';
 import { formatCurrency } from '../constants/currencies';
 
@@ -42,6 +43,11 @@ export default function WorkspaceView() {
   const [deleting, setDeleting] = useState(false);
   const { showToast } = useToast();
   const { showUpgrade } = useUpgrade();
+  const { selectWorkspace } = useBilling();
+
+  // Keep billing pointed at the workspace being viewed, so the upgrade prompt
+  // can send the user straight to this workspace's billing page.
+  useEffect(() => { if (id) selectWorkspace(id); }, [id, selectWorkspace]);
 
   function fetchExpenses() {
     setExpensesLoading(true);
@@ -90,7 +96,7 @@ export default function WorkspaceView() {
     } catch (err) {
       if (isPlanLimitError(err)) {
         setShowInvite(false);
-        showUpgrade(err);
+        showUpgrade(err, id);
         return;
       }
       setInviteError(err?.response?.data?.error || err?.message || 'Failed to invite member');

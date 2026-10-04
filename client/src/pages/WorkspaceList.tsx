@@ -37,10 +37,13 @@ export default function WorkspaceList() {
       setForm({ name: '', description: '' });
       showToast('Workspace created', 'success');
     } catch (err) {
-      if (isPlanLimitError(err)) {
-        showUpgrade(err);
-        return;
-      }
+if (isPlanLimitError(err)) {
+          // Hitting the workspace cap means at least one workspace already
+          // exists, so bill that one rather than dumping the user back on the
+          // list they are already looking at.
+          showUpgrade(err, workspaces[0]?.id);
+          return;
+        }
       showToast('Failed to create workspace', 'error');
     } finally {
       setCreating(false);
